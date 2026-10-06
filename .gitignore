@@ -1,0 +1,12 @@
+# build output
+out/
+build/refs/
+build/app.res
+*.pdb
+# editors
+.vs/
+.vscode/
+*.user
+*.suo
+Thumbs.db
+.DS_Store

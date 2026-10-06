@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and run tests (.NET Framework csc, C# 5)
+        shell: cmd
+        run: Build.cmd test
+
+      - name: Check server module syntax
+        shell: pwsh
+        run: python -c "import ast; ast.parse(open('src/Server/coopbots.py').read().replace('0L', '0'))"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BF2Manager-${{ github.sha }}
+          path: out/BF2Manager.exe

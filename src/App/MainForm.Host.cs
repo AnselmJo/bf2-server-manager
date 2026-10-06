@@ -1,0 +1,361 @@
+// Hauptfenster: Host-Logik (Rollen, Standard, Zuletzt gestartet, Autospeichern, Startprüfung, laufender Server) - BF2 Manager. C# 5.
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Web.Script.Serialization;
+using System.Windows.Forms;
+using WinTimer = System.Windows.Forms.Timer;
+
+namespace BF2Coop
+{
+    public partial class MainForm
+    {
+        bool _setupForce;
+        WinTimer _autoSave; Dictionary<string, string> _startVals; string _rotSig = "";
+        bool _moduleSeen, _hung, _crashed; DateTime _hungSince = DateTime.MinValue;
+        Card _cBehavior, _cStandard; ToggleSwitch _autoRestart;
+        Banner _cfgBanner, _liveBanner; FlatButton _bCfgAction, _bLiveAction;
+        static string StandardFile { get { return Path.Combine(AppPaths.Dir, "standard.json"); } }
+        static string RecentDir { get { return Path.Combine(AppPaths.Dir, "recent"); } }
+
+        // ================================================================== Rollen
+        void ApplyRoleCards()
+        {
+            if (_exHost != null) _exHost.Masonry(_exCards, 2);
+            if (_cSetup != null) { _cSetup.Title = _host ? T("Mods und Server-Einrichtung", "Mods and server setup") : "Mods"; _cSetup.Invalidate(); }
+        }
+
+        // ================================================================== Optionen-Seite: Verhalten und Standard
+        void BuildServerExtras()
+        {
+            _cBehavior = MakeCard("srv.behavior", T("Server-Verhalten", "Server behaviour"), G.Shield, true);
+            _autoRestart = new ToggleSwitch(); _autoRestart.SetSilent(_cfg.B("Watchdog", true));
+            _autoRestart.CheckedChanged += delegate { _cfg.Set("Watchdog", _autoRestart.Checked); _cfg.Save(); };
+            FormRow rAuto = new FormRow(T("Bei Absturz automatisch neu starten", "Restart automatically after a crash"),
+                T("Startet den Server neu, wenn er abstürzt oder nicht mehr reagiert (höchstens 3-mal in 10 Minuten).", "Restarts the server if it crashes or stops responding (at most 3 times in 10 minutes)."), _autoRestart, _autoRestart.Width, false);
+            _cUnlock.Controls.Remove(_rowUnlockServer);
+            _cLanHost.Controls.Remove(_lanHostRow);
+            foreach (Control c in new Control[] { rAuto, _rowUnlockServer, _lanHostRow, _lanInfo }) _cBehavior.Controls.Add(c);
+            _cBehavior.Layouter = Stack(_cBehavior, delegate { return new List<Control> { rAuto, _rowUnlockServer, _lanHostRow, _lanInfo }; });
+
+            _cStandard = MakeCard("srv.standard", T("Standard", "Default"), G.Star, true);
+            Para sInfo = new Para(T("Dein Standard gilt für alle Mods: Servereinstellungen, Bot-Werte pro Mapgröße und anpassende Schwierigkeit. Neue Mods starten damit, „Auf Standard zurücksetzen“ kehrt dorthin zurück. Die Rotation bleibt pro Mod.",
+                "Your default applies to all mods: server settings, bot values per map size and adaptive difficulty. New mods start with it, “Reset to default” returns to it. The rotation stays per mod."));
+            sInfo.Color = Theme.Dim;
+            FlatButton bSet = new FlatButton(T("Aktuelle Werte als Standard", "Use current values as default"), G.Star, BtnKind.Secondary);
+            bSet.Click += delegate { SaveStandard(); };
+            FlatButton bReset = new FlatButton(T("Auf Standard zurücksetzen", "Reset to default"), G.Undo, BtnKind.Secondary);
+            bReset.Click += delegate { ResetToStandard(false); };
+            FlatButton bFactory = new FlatButton(T("Werkseinstellungen", "Factory settings"), null, BtnKind.Ghost);
+            bFactory.Click += delegate { ResetToStandard(true); };
+            ButtonRow sb = Buttons(bSet, bReset, bFactory);
+            _cStandard.Controls.Add(sInfo); _cStandard.Controls.Add(sb);
+            _cStandard.Layouter = Stack(_cStandard, delegate { return new List<Control> { sInfo, sb }; });
+
+            _srvCards.Insert(0, _cStandard); _srvCards.Insert(0, _cBehavior);
+            _srvHost.Canvas.Controls.Add(_cBehavior); _srvHost.Canvas.Controls.Add(_cStandard);
+            HookCollapse(_cBehavior, _srvHost, _srvCards, 2); HookCollapse(_cStandard, _srvHost, _srvCards, 2);
+
+            // Hinweisleisten: Konfiguration (Server läuft / Absturz) und Live (reagiert nicht)
+            _cfgBanner = new Banner();
+            _bCfgAction = new FlatButton("", null, BtnKind.Primary);
+            _bCfgAction.Click += delegate { if (_crashed) { _crashed = false; UpdateServerBanners(); if (StartServerProcess()) SelectPage(PgLive); } else { _forceConfig = false; SelectPage(PgLive); } };
+            FlatButton bCfgDetails = new FlatButton(T("Details", "Details"), null, BtnKind.Ghost);
+            bCfgDetails.Click += delegate { ShowServerLog(); };
+            _cfgBanner.AddRight(_bCfgAction); _cfgBanner.AddRight(bCfgDetails);
+            _pages[PgMaps].Controls.Add(_cfgBanner);
+            _pages[PgMaps].Controls.SetChildIndex(_cfgBanner, _pages[PgMaps].Controls.Count - 2);
+
+            _liveBanner = new Banner(); _liveBanner.Tint = Theme.Red; _liveBanner.Glyph = G.Warn;
+            _bLiveAction = new FlatButton(T("Neu starten", "Restart"), G.Refresh, BtnKind.Primary);
+            _bLiveAction.Click += delegate { RestartServer(); };
+            _liveBanner.AddRight(_bLiveAction);
+            _pages[PgLive].Controls.Add(_liveBanner);
+            _pages[PgLive].Controls.SetChildIndex(_liveBanner, _pages[PgLive].Controls.Count - 2);
+        }
+
+        void UpdateServerBanners()
+        {
+            if (_cfgBanner == null) return;
+            if (_crashed)
+            {
+                _cfgBanner.Visible = true; _cfgBanner.Tint = Theme.Red; _cfgBanner.Glyph = G.Warn;
+                _cfgBanner.Text2 = T("Server wurde unerwartet beendet.", "The server stopped unexpectedly.");
+                _bCfgAction.Text = T("Neu starten", "Restart");
+            }
+            else if (_running)
+            {
+                _cfgBanner.Visible = true; _cfgBanner.Tint = Theme.Green; _cfgBanner.Glyph = G.Pulse;
+                _cfgBanner.Text2 = T("Server läuft – Rotation und Bots wirken ab der nächsten Map.", "Server is running – rotation and bots apply from the next map.");
+                _bCfgAction.Text = T("Zur Live-Ansicht", "Back to live view");
+            }
+            else _cfgBanner.Visible = false;
+            _bCfgAction.Fit(); _cfgBanner.PerformLayout(); _cfgBanner.Invalidate();
+            _liveBanner.Visible = _running && _hung;
+            _liveBanner.Text2 = T("Server reagiert nicht (Fehlerfenster offen?).", "Server is not responding (error window open?).");
+            _liveBanner.PerformLayout(); _liveBanner.Invalidate();
+        }
+
+        void RestartServer()
+        {
+            _userStopped = true;
+            Srv.Kill();
+            System.Threading.Thread.Sleep(800);
+            _hung = false; _crashed = false;
+            if (StartServerProcess()) Toast(T("Server wird neu gestartet …", "Server is restarting …"), ToastKind.Info);
+            UpdateServerBanners();
+        }
+
+        // Hänger: Prozess läuft, aber das Bot-Modul meldet sich nicht mehr (z. B. „Debug assertion failed“)
+        void CheckHang(bool run)
+        {
+            if (_module) _moduleSeen = true;
+            bool hung = run && _moduleSeen && !_module;
+            if (hung && !_hung) { _hungSince = DateTime.Now; Util.Log(AppPaths.Dir, "Server not responding"); }
+            _hung = hung;
+            if (!run) _moduleSeen = false;
+            if (_hung && _cfg.B("Watchdog", true) && (DateTime.Now - _hungSince).TotalSeconds > 60)
+            {
+                _hungSince = DateTime.Now.AddMinutes(5);
+                Toast(T("Server reagiert nicht – wird neu gestartet …", "Server not responding – restarting …"), ToastKind.Warn);
+                RestartServer();
+            }
+            UpdateServerBanners();
+        }
+
+        // ================================================================== Standard
+        void SaveStandard()
+        {
+            try
+            {
+                Dictionary<string, object> d = Snapshot(false);
+                d.Remove("Mod"); d.Remove("Type");
+                Directory.CreateDirectory(AppPaths.Dir);
+                File.WriteAllText(StandardFile, new JavaScriptSerializer().Serialize(d), new UTF8Encoding(false));
+                Toast(T("Als Standard gespeichert.", "Saved as default."), ToastKind.Ok);
+            }
+            catch (Exception ex) { Toast(ex.Message, ToastKind.Error); }
+        }
+
+        Dictionary<string, object> LoadStandard()
+        {
+            try { if (File.Exists(StandardFile)) return new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(File.ReadAllText(StandardFile, Encoding.UTF8)); }
+            catch { }
+            return null;
+        }
+
+        void ResetToStandard(bool factory)
+        {
+            Dictionary<string, object> std = factory ? null : LoadStandard();
+            string what = factory ? T("Werkseinstellungen", "factory settings") : (std != null ? T("deinen Standard", "your default") : T("Werkseinstellungen (noch kein eigener Standard)", "factory settings (no own default yet)"));
+            if (!DarkDialog.Confirm(this, T("Zurücksetzen", "Reset"), T("Servereinstellungen und Bot-Werte auf ", "Reset server settings and bot values to ") + what + T(" setzen? Die Rotation bleibt.", "? The rotation stays."), T("Zurücksetzen", "Reset"), false)) return;
+            if (std == null)
+            {
+                _applying = true;
+                _vals = Defs.Defaults(); ApplyVals();
+                CoopState fresh = new CoopState();
+                foreach (int s in new int[] { 16, 32, 64 }) _botEd[s].SetOpt(fresh.Defaults[s]);
+                _adaptToggle.SetSilent(false); _adaptStep.SetSilent(5); _adaptMax.SetSilent(30);
+                _applying = false;
+                UpdateHumans(); MarkDirty();
+            }
+            else ApplySnapshot(std, false);
+            Toast(T("Zurückgesetzt.", "Reset."), ToastKind.Ok);
+        }
+
+        // ================================================================== Zuletzt gestartet
+        void SaveRecent()
+        {
+            try
+            {
+                Directory.CreateDirectory(RecentDir);
+                Dictionary<string, object> d = Snapshot(true);
+                d["Label"] = _mod + " · " + (_coop ? "Coop" : "Conquest") + " · " + _st.Maps.Count + " Maps · " + DateTime.Now.ToString("dd.MM. HH:mm");
+                string sig = _mod + _coop + string.Join(",", ((List<string>)d["Maps"]).ToArray());
+                foreach (string f in Directory.GetFiles(RecentDir, "*.json"))
+                    try { if (File.ReadAllText(f).Contains("\"Sig\":\"" + Util.SafeName(sig.GetHashCode().ToString()) + "\"")) File.Delete(f); } catch { }
+                d["Sig"] = Util.SafeName(sig.GetHashCode().ToString());
+                File.WriteAllText(Path.Combine(RecentDir, DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".json"), new JavaScriptSerializer().Serialize(d), new UTF8Encoding(false));
+                string[] all = Directory.GetFiles(RecentDir, "*.json");
+                Array.Sort(all, StringComparer.Ordinal);
+                for (int i = 0; i < all.Length - 5; i++) File.Delete(all[i]);
+            }
+            catch { }
+        }
+
+        void BuildConfigMenu(ContextMenuStrip m)
+        {
+            m.Items.Clear();
+            ToolStripMenuItem head = new ToolStripMenuItem(T("Zuletzt gestartet", "Recently started")); head.Enabled = false;
+            m.Items.Add(head);
+            string[] rec = Directory.Exists(RecentDir) ? Directory.GetFiles(RecentDir, "*.json") : new string[0];
+            Array.Sort(rec, StringComparer.Ordinal); Array.Reverse(rec);
+            foreach (string f in rec)
+            {
+                string file = f, label = Path.GetFileNameWithoutExtension(f);
+                try { Dictionary<string, object> d = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(File.ReadAllText(f, Encoding.UTF8)); object o; if (d.TryGetValue("Label", out o)) label = Convert.ToString(o); } catch { }
+                ToolStripMenuItem it = new ToolStripMenuItem("   " + label); it.Click += delegate { LoadPreset(file); };
+                m.Items.Add(it);
+            }
+            if (rec.Length == 0) { ToolStripMenuItem none = new ToolStripMenuItem(T("   noch nichts", "   nothing yet")); none.Enabled = false; m.Items.Add(none); }
+            m.Items.Add(new ToolStripSeparator());
+            ToolStripMenuItem ph = new ToolStripMenuItem(T("Presets", "Presets")); ph.Enabled = false; m.Items.Add(ph);
+            string[] files = Directory.Exists(AppPaths.Presets) ? Directory.GetFiles(AppPaths.Presets, "*.json") : new string[0];
+            Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+            foreach (string f in files)
+            {
+                string file = f, name = Path.GetFileNameWithoutExtension(f);
+                ToolStripMenuItem it = new ToolStripMenuItem("   " + name); it.Click += delegate { LoadPreset(file); };
+                ToolStripMenuItem del = new ToolStripMenuItem(T("Löschen", "Delete"));
+                del.Click += delegate { if (DarkDialog.Confirm(this, T("Preset löschen", "Delete preset"), name, T("Löschen", "Delete"), true)) try { File.Delete(file); } catch { } };
+                it.DropDownItems.Add(del);
+                m.Items.Add(it);
+            }
+            ToolStripMenuItem save = new ToolStripMenuItem(T("   Aktuelle Konfiguration als Preset speichern …", "   Save current configuration as preset …"));
+            save.Click += delegate { SavePreset(); };
+            m.Items.Add(save);
+        }
+
+        // ================================================================== Automatisch speichern
+        void ScheduleSave()
+        {
+            if (_autoSave == null) { _autoSave = new WinTimer(); _autoSave.Interval = 800; _autoSave.Tick += delegate { _autoSave.Stop(); AutoSaveNow(); }; }
+            _autoSave.Stop(); _autoSave.Start();
+        }
+
+        void AutoSaveNow()
+        {
+            if (_setupMode || _mod.Length == 0) return;
+            if (_autoSave != null) _autoSave.Stop();
+            if (!_dirty) return;
+            if (SaveAll(true) && _running) ApplyToRunningServer();
+        }
+
+        // Laufender Server: ⚡-Werte sofort senden, geänderte Rotation übergeben (nächste Map bleibt die nach der aktuellen)
+        void ApplyToRunningServer()
+        {
+            if (!_running || !_module) return;
+            if (_startVals != null)
+                foreach (SettingDef d in Defs.All)
+                {
+                    if (!d.Live) continue;
+                    string v = _vals[d.Key], s; _sentVals.TryGetValue(d.Key, out s);
+                    if (s == null) _startVals.TryGetValue(d.Key, out s);
+                    if (Defs.Same(d, v, s)) continue;
+                    try { CmdChannel.Send(ModSettingsDir, d.IsSpecial ? "@commander " + v : d.Key + " " + Defs.ToCon(d, v)); _sentVals[d.Key] = v; } catch { }
+                }
+            string sig = RotationSig();
+            if (sig != _rotSig && _st.Maps.Count > 0)
+            {
+                _rotSig = sig;
+                try
+                {
+                    CmdChannel.Send(ModSettingsDir, "mapList.clear");
+                    foreach (MapEntry m in _st.Maps) CmdChannel.Send(ModSettingsDir, "mapList.append " + m.Name + " " + m.Mode + " " + m.Size);
+                    int cur = CurrentMapIndex();
+                    CmdChannel.Send(ModSettingsDir, "admin.nextLevel " + ((cur + 1) % _st.Maps.Count));
+                    Toast(T("Rotation an den laufenden Server übergeben – wirkt ab der nächsten Map.", "Rotation sent to the running server – applies from the next map."), ToastKind.Info);
+                }
+                catch { }
+            }
+            UpdateLiveBanner();
+        }
+
+        readonly Dictionary<string, string> _sentVals = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        string _liveMap = "";
+
+        string RotationSig() { StringBuilder sb = new StringBuilder(); foreach (MapEntry m in _st.Maps) sb.Append(m.Key).Append(';'); return sb.ToString(); }
+
+        int CurrentMapIndex()
+        {
+            for (int i = 0; i < _st.Maps.Count; i++) if (string.Equals(_st.Maps[i].Name, _liveMap, StringComparison.OrdinalIgnoreCase)) return i;
+            return -1;
+        }
+
+        // Anzahl Änderungen, die erst nach einem Neustart wirken
+        int PendingRestart()
+        {
+            if (_startVals == null) return 0;
+            int n = 0;
+            foreach (SettingDef d in Defs.All)
+            {
+                if (d.Live) continue;
+                string s; _startVals.TryGetValue(d.Key, out s);
+                if (!Defs.Same(d, _vals[d.Key], s)) n++;
+            }
+            return n;
+        }
+
+        // ================================================================== Prüfung vor dem Serverstart
+        bool ValidateStart()
+        {
+            List<string> err = new List<string>(), warn = new List<string>();
+            if (!File.Exists(Path.Combine(GameDir, "bf2_w32ded.exe"))) err.Add(T("bf2_w32ded.exe fehlt im Spielordner.", "bf2_w32ded.exe is missing in the game folder."));
+            if (_st.Maps.Count == 0) err.Add(T("Die Rotation ist leer – mindestens eine Map hinzufügen.", "The rotation is empty – add at least one map."));
+            ModStatus ms;
+            if (_coop && _status.TryGetValue(_mod, out ms) && (!ms.Installed || !ms.Hooked)) err.Add(T("Das Bot-Modul ist in „", "The bot module is not set up in “") + _mod + T("“ nicht eingerichtet (Einstellungen › Mods).", "” (Settings › Mods)."));
+            if (!PortFree(Util.ToInt(_vals["sv.serverPort"], 16567))) err.Add(T("Der Server-Port ist belegt – läuft schon ein anderer Server?", "The server port is in use – is another server already running?"));
+            if (_coop)
+                foreach (MapEntry m in _st.Maps)
+                {
+                    BotPlan p = Planner.Plan(OptFor(m), _hUS.Value, _hMEC.Value);
+                    if (p.Total > m.Size) { warn.Add(Util.Pretty(m.Name) + " " + m.Size + ": " + p.Total + T(" Spieler", " players")); }
+                }
+            if (err.Count > 0) { DarkDialog.Info(this, T("Server kann nicht starten", "Server cannot start"), "• " + string.Join("\n• ", err.ToArray())); return false; }
+            if (warn.Count > 0) Toast(T("Mehr Spieler als Plätze: ", "More players than slots: ") + string.Join(", ", warn.GetRange(0, Math.Min(3, warn.Count)).ToArray()), ToastKind.Warn);
+            return true;
+        }
+
+        static bool PortFree(int port)
+        {
+            try { using (UdpClient u = new UdpClient(port)) { } return true; }
+            catch { return false; }
+        }
+
+        // ================================================================== Erster Start: Spielername
+        void AskNameOnce()
+        {
+            if (_cfg.B("NameAsked", false) || _shotDir != null) return;
+            _cfg.Set("NameAsked", true); _cfg.Save();
+            Bf2Profile p = Profiles.Default();
+            if (p == null || p.Online || (!string.IsNullOrEmpty(p.Nick) && !p.Nick.Equals("defaultPlayer", StringComparison.OrdinalIgnoreCase))) return;
+            string name = DarkDialog.Input(this, T("Willkommen!", "Welcome!"), T("Wie heißt du im Spiel? So sehen dich die anderen.", "What is your in-game name? This is how others see you."), "");
+            name = Profiles.CleanName(name);
+            if (name.Length == 0) return;
+            try
+            {
+                Dictionary<string, string> v = new Dictionary<string, string>(); v["setName"] = "\"" + name + "\""; v["setNick"] = "\"" + name + "\"";
+                Profiles.Set(Path.Combine(p.Dir, "Profile.con"), "LocalProfile", v);
+                Toast(T("Hallo ", "Hello ") + name + "!", ToastKind.Ok);
+                RefreshChecks(true);
+            }
+            catch (Exception ex) { Toast(ex.Message, ToastKind.Error); }
+        }
+
+        // ================================================================== Diagnose: Server-Log
+        void ShowServerLog()
+        {
+            string f = _mod.Length > 0 ? Path.Combine(ModSettingsDir, "coop_status.txt") : null;
+            string[] lines = f != null ? Util.ReadLines(f) : new string[0];
+            int from = Math.Max(0, lines.Length - 200);
+            StringBuilder sb = new StringBuilder();
+            for (int i = from; i < lines.Length; i++) sb.Append(lines[i]).Append("\r\n");
+            using (Form d = new Form())
+            {
+                d.Text = T("Server-Log", "Server log") + " – " + _mod; d.StartPosition = FormStartPosition.CenterParent; d.Size = new Size(Dpi.D(900), Dpi.D(560));
+                d.BackColor = Theme.Bg; d.ShowInTaskbar = false; d.Icon = Icon;
+                RichTextBox rt = new RichTextBox(); rt.Dock = DockStyle.Fill; rt.ReadOnly = true; rt.BorderStyle = BorderStyle.None;
+                rt.BackColor = Theme.Input; rt.ForeColor = Theme.Text; rt.Font = Theme.Mono; rt.Text = sb.Length > 0 ? sb.ToString() : T("Noch keine Einträge.", "No entries yet.");
+                d.Controls.Add(rt);
+                d.HandleCreated += delegate { Native.DarkTitle(d); Native.DarkScroll(rt); };
+                rt.SelectionStart = rt.TextLength; rt.ScrollToCaret();
+                d.ShowDialog(this);
+            }
+        }
+    }
+}

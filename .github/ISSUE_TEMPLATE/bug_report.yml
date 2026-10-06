@@ -1,0 +1,37 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! The fastest way to help: in the app go to **Extras › Maintenance › Export diagnostics** and attach the ZIP file here (it contains no game files and no passwords).
+  - type: input
+    id: version
+    attributes:
+      label: Manager version
+      description: Shown at the bottom left of the app (e.g. v1.2.1)
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: This PC is
+      options: [Server PC (host), Player PC, Both]
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead? Screenshots help.
+    validations:
+      required: true
+  - type: input
+    id: mod
+    attributes:
+      label: Mod
+      description: e.g. bf2all64, xpack, bf2
+  - type: textarea
+    id: log
+    attributes:
+      label: Log / error message
+      render: text

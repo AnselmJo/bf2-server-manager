@@ -1,0 +1,50 @@
+name: Release
+
+# Push a tag like v1.2.1 to build and publish a release.
+# The in-app updater downloads BF2Manager.exe and verifies it against SHA256SUMS.txt.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag must match AppInfo.Version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart('v')
+          $code = (Select-String -Path src/Game/GameInstall.cs -Pattern 'const string Version = "([^"]+)"').Matches[0].Groups[1].Value
+          if ($tag -ne $code) { throw "Tag $tag does not match AppInfo.Version $code in src/Game/GameInstall.cs" }
+
+      - name: Build and run tests
+        shell: cmd
+        run: Build.cmd test
+
+      - name: Checksums and release notes
+        shell: pwsh
+        run: |
+          $h = (Get-FileHash out/BF2Manager.exe -Algorithm SHA256).Hash.ToLower()
+          "$h  BF2Manager.exe" | Out-File -Encoding ascii out/SHA256SUMS.txt
+          $ver = "${{ github.ref_name }}".TrimStart('v')
+          $text = Get-Content CHANGELOG.md -Raw
+          $m = [regex]::Match($text, "(?ms)^## \[?$([regex]::Escape($ver))\]?[^\n]*\n(.*?)(?=^## |\z)")
+          $notes = if ($m.Success) { $m.Groups[1].Value.Trim() } else { "See CHANGELOG.md" }
+          $notes | Out-File -Encoding utf8 out/notes.md
+
+      - name: Publish
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -match '-') {
+            gh release create $tag out/BF2Manager.exe out/SHA256SUMS.txt --title "BF2 Manager $tag" --notes-file out/notes.md --prerelease
+          } else {
+            gh release create $tag out/BF2Manager.exe out/SHA256SUMS.txt --title "BF2 Manager $tag" --notes-file out/notes.md
+          }
