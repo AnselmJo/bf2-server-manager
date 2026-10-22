@@ -2,6 +2,10 @@
 
 Switch between **Play** and **Host** at the top left. Every setting has an **ⓘ** with an explanation, the default and when a change applies. Everything is saved automatically.
 
+## Where the manager lives
+
+Started from Downloads or a ZIP? The manager offers once to **copy itself into the game folder** (next to `BF2.exe`), adds the firewall rule for that place, puts a *BF2 Manager* shortcut on the desktop and restarts from there. The old copy can be deleted afterwards. Any time later: *Settings › Folders › Copy manager to game folder*.
+
 ## First start
 
 A welcome window asks for two things: the **game folder** (found automatically; otherwise *Choose folder*) and your **player name**. The manager creates your Battlefield 2 profile if there is none. *Later* skips it – the **Your player** card on *Play* asks again. Run it again any time: *Profile › Run first-time setup again*.
@@ -17,7 +21,7 @@ A welcome window asks for two things: the **game folder** (found automatically; 
 - No server? *Start game without server* opens the main menu. *Server not found?* lets you enter an IP (only needed for VPN LANs).
 - When something on this PC needs attention, a yellow bar with **Fix** appears at the top; when all is well the card just shows *✓ This PC is ready*.
 
-**Settings** – This PC (check and fixes, click to expand), Game start (windowed, skip intro, log in automatically), Graphics (incl. optional ReShade), Audio, Mods (versions), Updates, Diagnostics, Language, Folders (incl. *Change game folder*).
+**Settings** – This PC (check and fixes, click to expand; *Server search on LAN* tests whether the firewall lets the manager's announcements through and offers *Allow in firewall*), Game start (windowed, skip intro, log in automatically), Graphics (incl. optional ReShade), Audio, Mods (versions), Updates, Diagnostics, Language, Folders (incl. *Change game folder*).
 
 **ReShade (optional)** – image filters for a sharper, more vivid look. The manager does not ship ReShade; *Set up* explains how to install it from reshade.me (Direct3D 9, select BF2.exe). Afterwards a switch turns it on and off. If BF2 freezes, switch it off first.
 

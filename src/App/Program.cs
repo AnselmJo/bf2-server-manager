@@ -29,7 +29,7 @@ namespace BF2Coop
     // ------------------------------------------------------------------ Programmstart
     static class Program
     {
-        public static string UpdatedFrom;
+        public static string UpdatedFrom, MovedFrom; // MovedFrom: alter Pfad, wenn sich der Manager in den Spielordner kopiert hat
 
         [STAThread]
         static void Main(string[] args)
@@ -47,6 +47,7 @@ namespace BF2Coop
             {
                 if (args[i] == "--shot") shot = args[i + 1];
                 if (args[i] == "--updated") UpdatedFrom = args[i + 1];
+                if (args[i] == "--moved") MovedFrom = args[i + 1];
             }
             // GitHub verlangt TLS 1.2; .NET 4.x aktiviert es nicht immer von selbst
             try { System.Net.ServicePointManager.SecurityProtocol |= (System.Net.SecurityProtocolType)3072; } catch { }
@@ -58,7 +59,7 @@ namespace BF2Coop
                 {
                     // Nach einem Update wartet die neue Version, bis die alte beendet ist
                     bool got = false;
-                    if (UpdatedFrom != null) { try { got = mx.WaitOne(20000); } catch (AbandonedMutexException) { got = true; } }
+                    if (UpdatedFrom != null || MovedFrom != null) { try { got = mx.WaitOne(20000); } catch (AbandonedMutexException) { got = true; } }
                     if (!got) { MessageBox.Show(AppInfo.Name + " is already running.", AppInfo.Name); return; }
                 }
                 Directory.CreateDirectory(AppPaths.Dir);

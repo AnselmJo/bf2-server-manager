@@ -19,7 +19,7 @@ namespace BF2Coop
         void StartLan()
         {
             if (_shotDir != null) return;
-            _lanListen = new LanListener();
+            _lanListen = new LanListener(); _lanListen.OwnId = InstanceId;
             _lanListen.Start();
             ApplyLanHost();
             RefreshLanInfo();
@@ -71,13 +71,42 @@ namespace BF2Coop
         void LanTick(Dictionary<string, string> live)
         {
             _lastLive = live;
-            if (_lanFiles != null && _lanFiles.Error == null && (DateTime.Now - _lastBeacon).TotalSeconds >= 3) SendBeacon(live);
+            if ((DateTime.Now - _lastBeacon).TotalSeconds >= 3)
+            {
+                if (_lanFiles != null && _lanFiles.Error == null) SendBeacon(live);
+                else if (_lanListen != null && _lanListen.Error == null) SendProbe();
+            }
             if (_page == PgPlayer && !_syncBusy) RefreshServers(false);
+            // Ändert sich, ob die eigene Bekanntmachung ankommt, den PC-Check neu laufen lassen
+            bool? e = EchoState;
+            if (e != null && e != _echoShown) RefreshChecks(true);
+        }
+
+        DateTime _firstBeacon = DateTime.MinValue; bool? _echoShown;
+
+        // null = (noch) nicht prüfbar; true = eigene Bekanntmachung kommt zurück; false = kommt seit über 10 s nicht an
+        bool? EchoState
+        {
+            get
+            {
+                if (_lanListen == null || _lanListen.Error != null || _firstBeacon == DateTime.MinValue || Srv.LanAddresses().Count == 0) return null;
+                if ((DateTime.Now - _lanListen.SelfSeen).TotalSeconds < 15) return true;
+                return (DateTime.Now - _firstBeacon).TotalSeconds > 10 ? (bool?)false : null;
+            }
+        }
+
+        void SendProbe()
+        {
+            _lastBeacon = DateTime.Now;
+            if (_firstBeacon == DateTime.MinValue) _firstBeacon = DateTime.Now;
+            string payload = Lan.ProbeMagic + InstanceId;
+            ThreadPool.QueueUserWorkItem(delegate { try { Lan.Announce(payload); } catch { } });
         }
 
         void SendBeacon(Dictionary<string, string> live)
         {
             _lastBeacon = DateTime.Now;
+            if (_firstBeacon == DateTime.MinValue) _firstBeacon = DateTime.Now;
             LanHost h = OwnHost(live);
             string payload = Lan.Payload(h.Name, h.GamePort, h.Mod, h.Map, h.Humans, h.Max, h.Mode, h.Running)
                 + "|" + h.Id + "|" + h.Size + "|" + h.Bots + "|" + Lan.Esc(h.ModVersion);

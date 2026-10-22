@@ -115,11 +115,16 @@ namespace BF2Coop
             Theme.Tip.SetToolTip(bDirChange, T("Spielordner ändern\nNur nötig, wenn Battlefield 2 woanders liegt als erkannt.", "Change game folder\nOnly needed if Battlefield 2 is somewhere else than detected."));
             bDirChange.Click += delegate { ChooseGameDir(); };
             fb.Add(bDirChange);
+            FlatButton bMove = new FlatButton(T("Manager in den Spielordner kopieren …", "Copy manager to game folder …"), G.Copy, BtnKind.Ghost);
+            Theme.Tip.SetToolTip(bMove, T("Manager in den Spielordner kopieren\nDort bleibt die Firewall-Freigabe gültig, und beim Kopieren des Spielordners ist der Manager dabei. Legt eine Desktop-Verknüpfung an.", "Copy manager to game folder\nThere the firewall rule stays valid, and the manager comes along when the game folder is copied. Creates a desktop shortcut."));
+            bMove.Click += delegate { MoveToGameDir(); };
+            fb.Add(bMove);
             foreach (FlatButton b in fb) cFolders.Controls.Add(b);
             cFolders.Layouter = delegate (int w)
             {
                 int x = Dpi.D(20), y = cFolders.HeaderH - Dpi.D(4);
-                foreach (FlatButton b in fb) { if (x + b.Width > w - Dpi.D(20)) { x = Dpi.D(20); y += Dpi.D(40); } b.Location = new Point(x, y); x += b.Width + Dpi.D(6); }
+                bMove.Visible = CanMoveToGameDir;
+                foreach (FlatButton b in fb) { if (b == bMove && !CanMoveToGameDir) continue; if (x + b.Width > w - Dpi.D(20)) { x = Dpi.D(20); y += Dpi.D(40); } b.Location = new Point(x, y); x += b.Width + Dpi.D(6); }
                 return y + Dpi.D(48);
             };
 

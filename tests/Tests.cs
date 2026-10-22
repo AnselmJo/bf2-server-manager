@@ -141,6 +141,11 @@ namespace BF2Coop.Tests
 
         static void LanTests()
         {
+            Check(Lan.Parse(Lan.ProbeMagic + "abc123", System.Net.IPAddress.Loopback) == null, "echo probe is not a server");
+            string src = Path.Combine(_tmp, "copy_src.bin"), dst = Path.Combine(_tmp, "copy_dst.bin");
+            File.WriteAllText(src, "x"); List<string> clog = new List<string>();
+            List<Dictionary<string, object>> ct = new List<Dictionary<string, object>>(); ct.Add(Tasks.Copy(src, dst));
+            Check(Elevation.Execute(ct, clog) && File.ReadAllText(dst) == "x", "copy task");
             List<FileEntry> loc = new List<FileEntry>(), rem = new List<FileEntry>();
             loc.Add(E("a.txt", 1, "11")); loc.Add(E("b.txt", 2, "22")); loc.Add(E("only_local.txt", 3, "33"));
             rem.Add(E("a.txt", 1, "11")); rem.Add(E("b.txt", 2, "99")); rem.Add(E("levels\\x\\client.zip", 5, "55"));

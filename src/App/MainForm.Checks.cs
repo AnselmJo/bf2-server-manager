@@ -158,11 +158,11 @@ namespace BF2Coop
             if (_checking || _cCheck == null) return;
             if (!force && (DateTime.Now - _checkedAt).TotalSeconds < 20) return;
             _checking = true;
-            string game = GameDir, docs = DocsDir;
+            string game = GameDir, docs = DocsDir; bool? echo = EchoState; _echoShown = echo;
             ThreadPool.QueueUserWorkItem(delegate
             {
                 List<CheckItem> r;
-                try { r = PcCheck.Run(game, docs); } catch (Exception ex) { r = new List<CheckItem>(); Util.Log(AppPaths.Dir, ex.ToString()); }
+                try { r = PcCheck.Run(game, docs, echo); } catch (Exception ex) { r = new List<CheckItem>(); Util.Log(AppPaths.Dir, ex.ToString()); }
                 try { BeginInvoke((MethodInvoker)delegate { ShowChecks(r); }); } catch { }
             });
         }

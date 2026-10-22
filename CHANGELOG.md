@@ -10,7 +10,11 @@ Bug fixes and an easier download.
 - **Rotation toolbar:** *Undo* overlapped *Shuffle* / *Clear*. All rotation actions are now compact icons with tooltips (up, down, remove, shuffle, undo, clear).
 - **Mods / Versions:** "BF2.exe ?" and "Server ?" – patched game files carry no version info; the manager now shows *present* / *missing* and detects BF2Hub. Mods whose `mod.desc` only contains a translation key (e.g. `MODDESC_XP_TITLE`) show the folder name instead.
 
+- **Firewall check was too optimistic:** a rule only counted by its name, so after moving the exe (e.g. from a ZIP or Downloads) the check said *OK* while Windows blocked the manager at the new place. Rules now must point to the current path. *Add rules* also replaces the rules Windows creates at its first prompt, which often allow only *public* networks.
+
 ### New
+- **Server search check** in *Settings › This PC*: the manager tests whether its own LAN announcement comes back. If not, it says so and offers **Allow in firewall** (one Windows prompt). Player PCs without a server send a small test packet for this; older managers ignore it.
+- **Copy the manager into the game folder:** if it runs from somewhere else (e.g. Downloads), the manager offers once to copy itself next to `BF2.exe` – with a firewall rule for the new place and a *BF2 Manager* desktop shortcut – restarts from there and offers to delete the old copy. Also under *Settings › Folders*.
 - **Refresh** button on *Servers on the network*. The list still updates by itself every few seconds; the note *searching …* shows that it is looking.
 - **Direct download link** for the latest `BF2Manager.exe` at the top of the README and in every release description.
 

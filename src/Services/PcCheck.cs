@@ -41,7 +41,9 @@ namespace BF2Coop
     {
         static string T(string de, string en) { return I18n.T(de, en); }
 
-        public static List<CheckItem> Run(string gameDir, string docs)
+        public static List<CheckItem> Run(string gameDir, string docs) { return Run(gameDir, docs, null); }
+
+        public static List<CheckItem> Run(string gameDir, string docs, bool? echo)
         {
             List<CheckItem> r = new List<CheckItem>();
             CheckItem g = New(r, "game", T("Spielordner", "Game folder"));
@@ -80,6 +82,20 @@ namespace BF2Coop
             fw.Detail = progs.Count == 0 ? T("Spiel, Server und Manager sind im Netzwerk erreichbar.", "Game, server and manager are reachable on the network.")
                 : T("Ohne Freigabe finden andere PCs Server und Manager evtl. nicht: ", "Without rules other PCs may not find the server and manager: ") + string.Join(", ", progs.ConvertAll(delegate (string p) { return Path.GetFileName(p); }).ToArray());
             if (progs.Count > 0) { fw.Tasks.Add(Tasks.Firewall(progs)); fw.FixLabel = T("Freigaben anlegen", "Add rules"); }
+
+            // Praxistest: kommt die eigene Bekanntmachung über das Netzwerk zurück? (null = noch nicht prüfbar)
+            if (echo != null)
+            {
+                CheckItem lan = New(r, "lan", T("Server-Suche im LAN", "Server search on LAN"));
+                if (echo == true) { lan.Status = CheckStatus.Ok; lan.Detail = T("Dieser PC empfängt seine eigene Bekanntmachung – Server im Netzwerk werden gefunden.", "This PC receives its own announcement – servers on the network are found."); }
+                else
+                {
+                    lan.Status = CheckStatus.Warn;
+                    lan.Detail = T("Die eigene Bekanntmachung kommt nicht zurück – andere Server erscheinen dann evtl. auch nicht. Meist blockiert die Windows-Firewall den Manager, z. B. nach dem Verschieben der Exe oder wenn die Windows-Abfrage nur für öffentliche Netze bestätigt wurde.",
+                        "The own announcement does not come back – other servers may not appear either. Usually the Windows firewall blocks the manager, e.g. after moving the exe or when the Windows prompt was only confirmed for public networks.");
+                    lan.Tasks.Add(Tasks.Firewall(new List<string> { AppPaths.Exe })); lan.FixLabel = T("Firewall freigeben", "Allow in firewall");
+                }
+            }
 
             CheckItem laa = New(r, "laa", T("4-GB-Speicher-Patch", "4 GB memory patch"));
             List<string> noLaa = new List<string>(); int unknown = 0;

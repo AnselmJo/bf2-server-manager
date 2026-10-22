@@ -121,6 +121,7 @@ namespace BF2Coop
             if (_shotDir != null) { RunShots(); return; }
             ShowUpdateNotes();
             ShowWelcome(false);
+            if (Program.MovedFrom != null) AfterMove(); else OfferMoveOnce();
             if (_cfg.B("AutoUpdate", true)) CheckForUpdates(false);
         }
 

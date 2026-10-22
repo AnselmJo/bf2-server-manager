@@ -38,6 +38,7 @@ namespace BF2Coop
         public static Dictionary<string, object> DirectX(string setup) { Dictionary<string, object> d = T("dx"); d["setup"] = setup; return d; }
         public static Dictionary<string, object> Grant(string dir) { Dictionary<string, object> d = T("grant"); d["dir"] = dir; return d; }
         public static Dictionary<string, object> Swap(string newFile, string target) { Dictionary<string, object> d = T("swap"); d["new"] = newFile; d["target"] = target; return d; }
+        public static Dictionary<string, object> Copy(string src, string dst) { Dictionary<string, object> d = T("copy"); d["src"] = src; d["dst"] = dst; return d; }
     }
 
     public static class Elevation
@@ -103,6 +104,7 @@ namespace BF2Coop
                     }
                     else if (type == "grant") { Installer.Grant(S(t, "dir")); log.Add("+ " + I18n.T("Schreibrechte: ", "Write access: ") + S(t, "dir")); }
                     else if (type == "swap") { Updater.SwapFiles(S(t, "new"), S(t, "target")); log.Add("+ " + I18n.T("Update eingespielt", "Update installed")); }
+                    else if (type == "copy") { File.Copy(S(t, "src"), S(t, "dst"), true); log.Add("+ " + I18n.T("Kopiert: ", "Copied: ") + S(t, "dst")); }
                     else throw new Exception("unknown task " + type);
                 }
                 catch (Exception ex) { ok = false; log.Add("! " + ex.Message); }
@@ -162,21 +164,27 @@ namespace BF2Coop
             }
         }
 
+        // Die Regel zählt nur, wenn sie auf genau diesen Pfad zeigt – nach dem Verschieben der Exe gilt die alte Regel nicht mehr.
+        // netsh bricht lange Pfade um; deshalb Leerraum vor dem Vergleich entfernen.
         public static bool Has(string program)
         {
             try
             {
                 int code;
                 string o = Netsh("advfirewall firewall show rule name=\"" + RuleName(program) + "\" verbose", out code);
-                return code == 0 && o.IndexOf(Path.GetFileName(program), StringComparison.OrdinalIgnoreCase) >= 0;
+                return code == 0 && Squash(o).IndexOf(Squash(Path.GetFullPath(program)), StringComparison.OrdinalIgnoreCase) >= 0;
             }
             catch { return false; }
         }
+
+        static string Squash(string s) { return System.Text.RegularExpressions.Regex.Replace(s ?? "", @"\s+", ""); }
 
         public static void Add(string program)
         {
             int code;
             Netsh("advfirewall firewall delete rule name=\"" + RuleName(program) + "\"", out code);
+            // Auch die Regeln ersetzen, die Windows bei der ersten Abfrage anlegt (oft nur „Öffentlich“ oder sogar „Blockieren“)
+            Netsh("advfirewall firewall delete rule name=all program=\"" + program + "\"", out code);
             string o = Netsh("advfirewall firewall add rule name=\"" + RuleName(program) + "\" dir=in action=allow program=\"" + program + "\" enable=yes profile=any", out code);
             if (code != 0) throw new Exception("netsh: " + o.Trim());
         }

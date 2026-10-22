@@ -64,7 +64,7 @@ USB stick, network share – whatever is fastest. Changed something later? Playe
 
 | Problem | Solution |
 |---|---|
-| Server not listed | **Fix** on **both** PCs (firewall). Same network? VPN LAN: *Server not found?* and enter the IP. |
+| Server not listed | **Fix** on **both** PCs (firewall) – *Settings › This PC › Server search on LAN* shows whether announcements get through. Moved the exe? Let the manager copy itself into the game folder. Same network? VPN LAN: *Server not found?* and enter the IP. |
 | "Modified content" or kicked after joining | Play › Get files from server |
 | Join stops at the login screen | Settings › Game start › Log in automatically on; offline profile selected |
 | Game freezes when joining | Play › *Game stuck? Close it*, then Play › Profile › **Repair profile**; ReShade off; check that the server still runs |

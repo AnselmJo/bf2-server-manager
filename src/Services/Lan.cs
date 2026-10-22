@@ -50,6 +50,8 @@ namespace BF2Coop
     {
         public const int BeaconPort = 29960, HttpPort = 29961;
         public const string Magic = "BF2SM1";
+        // Prüfpaket von Spieler-PCs ohne Server: nur um zu testen, ob der eigene Empfang funktioniert (andere ignorieren es)
+        public const string ProbeMagic = "BF2SM1P|";
 
         public static List<IPAddress> LocalAddresses()
         {
@@ -254,6 +256,8 @@ namespace BF2Coop
         UdpClient _udp; Thread _th; volatile bool _stop;
         readonly Dictionary<string, LanHost> _hosts = new Dictionary<string, LanHost>();
         public string Error;
+        // Kennung dieses Managers; kommt die eigene Bekanntmachung zurück, funktioniert der Empfang (Firewall offen)
+        public string OwnId; public DateTime SelfSeen = DateTime.MinValue;
 
         public void Start()
         {
@@ -275,8 +279,10 @@ namespace BF2Coop
                 {
                     IPEndPoint ep = new IPEndPoint(IPAddress.Any, 0);
                     byte[] d = _udp.Receive(ref ep);
-                    LanHost h = Lan.Parse(Encoding.UTF8.GetString(d), ep.Address);
-                    if (h != null) lock (_hosts) _hosts[h.Key] = h;
+                    string msg = Encoding.UTF8.GetString(d);
+                    if (msg.StartsWith(Lan.ProbeMagic)) { if (OwnId != null && msg.Substring(Lan.ProbeMagic.Length) == OwnId) SelfSeen = DateTime.Now; continue; }
+                    LanHost h = Lan.Parse(msg, ep.Address);
+                    if (h != null) { if (OwnId != null && h.Id == OwnId) SelfSeen = DateTime.Now; lock (_hosts) _hosts[h.Key] = h; }
                 }
                 catch { if (_stop) return; Thread.Sleep(200); }
             }
