@@ -99,7 +99,11 @@ namespace BF2Coop
             return Color.FromArgb((int)(a.R + (b.R - a.R) * t), (int)(a.G + (b.G - a.G) * t), (int)(a.B + (b.B - a.B) * t));
         }
         public static Color A(Color c, int alpha) { return Color.FromArgb(Math.Max(0, Math.Min(255, alpha)), c); }
-        public static Color ParentBg(Control c) { return c.Parent != null ? c.Parent.BackColor : Bg; }
+        public static Color ParentBg(Control c)
+        {
+            if (c.Parent is Banner) return ((Banner)c.Parent).Surface; // Knöpfe liegen auf der getönten Fläche, nicht auf dem Seitenhintergrund
+            return c.Parent != null ? c.Parent.BackColor : Bg;
+        }
         public static void Hq(Graphics g) { g.SmoothingMode = SmoothingMode.AntiAlias; g.PixelOffsetMode = PixelOffsetMode.HighQuality; }
 
         public static GraphicsPath Round(RectangleF r, float rad)

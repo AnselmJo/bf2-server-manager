@@ -96,8 +96,9 @@ namespace BF2Coop
             Bf2Profile prof = PlayProfile;
             if (prof != null && !prof.Online && _cfg.B("AutoLogin", true))
             {
+                // BF2 meldet über den Kontonamen (setName) an; Manager-Profile haben Konto- und Spielername gleich
                 Profiles.SetDefault(prof.Id);
-                a.Append(" +playerName \"").Append(prof.Nick ?? prof.Name).Append("\" +playerPassword \"\"");
+                a.Append(" +playerName \"").Append(prof.Name ?? prof.Nick).Append("\" +playerPassword \"\"");
             }
             if (ip != null) a.Append(" +joinServer ").Append(ip).Append(" +port ").Append(port);
             try

@@ -33,7 +33,7 @@ namespace BF2Coop
         public string Id, Title, Detail, FixLabel, Url;
         public CheckStatus Status;
         public List<Dictionary<string, object>> Tasks = new List<Dictionary<string, object>>();
-        public bool CanFix { get { return Tasks.Count > 0 || Url != null || Id == "profile"; } }
+        public bool CanFix { get { return Tasks.Count > 0 || Url != null || Id == "profile" || Id == "game"; } }
         public bool NeedsFix { get { return Status == CheckStatus.Warn || Status == CheckStatus.Error; } }
     }
 
@@ -45,7 +45,7 @@ namespace BF2Coop
         {
             List<CheckItem> r = new List<CheckItem>();
             CheckItem g = New(r, "game", T("Spielordner", "Game folder"));
-            if (!GameLocator.IsGameDir(gameDir)) { g.Status = CheckStatus.Error; g.Detail = T("Nicht gefunden. Den Manager in den Battlefield-2-Ordner legen oder unter Extras wählen.", "Not found. Put the manager into the Battlefield 2 folder or choose it under Extras."); return r; }
+            if (!GameLocator.IsGameDir(gameDir)) { g.Status = CheckStatus.Error; g.Detail = T("Nicht gefunden. Den Ordner wählen, in dem BF2.exe liegt.", "Not found. Choose the folder that contains BF2.exe."); g.FixLabel = T("Ordner wählen", "Choose folder"); return r; }
             string exe = Path.Combine(gameDir, "BF2.exe"), ded = Path.Combine(gameDir, "bf2_w32ded.exe");
             g.Status = CheckStatus.Ok;
             g.Detail = gameDir + "  ·  BF2 " + (GameLocator.FileVersion(exe) ?? "?") + (GameLocator.Portable() != null ? T("  ·  LAN-Ordner", "  ·  LAN folder") : "");
@@ -97,8 +97,8 @@ namespace BF2Coop
 
             CheckItem pr = New(r, "profile", T("Spielerprofil", "Player profile"));
             Bf2Profile def = Profiles.Default();
-            if (def == null) { pr.Status = CheckStatus.Warn; pr.Detail = T("Noch kein Profil – Spiel einmal starten und ein Offline-Konto anlegen.", "No profile yet – start the game once and create an offline account."); }
-            else if (string.IsNullOrEmpty(def.Nick) || def.Nick.Equals("defaultPlayer", StringComparison.OrdinalIgnoreCase)) { pr.Status = CheckStatus.Warn; pr.Detail = T("Spielername ist noch „defaultPlayer“.", "Player name is still “defaultPlayer”."); pr.FixLabel = T("Namen setzen", "Set name"); }
+            if (def == null) { pr.Status = CheckStatus.Warn; pr.Detail = T("Noch kein Profil – der Manager legt es an, sobald du einen Namen eingibst.", "No profile yet – the manager creates it once you enter a name."); pr.FixLabel = T("Profil anlegen", "Create profile"); }
+            else if (!def.Online && Profiles.IsPlaceholder(def.Nick)) { pr.Status = CheckStatus.Warn; pr.Detail = T("Spielername ist noch „", "Player name is still “") + (def.Nick ?? "") + T("“.", "”."); pr.FixLabel = T("Namen setzen", "Set name"); }
             else { pr.Status = CheckStatus.Ok; pr.Detail = def.Nick + " (" + def.Id + ")"; }
             return r;
         }

@@ -99,7 +99,7 @@ namespace BF2Coop
             BuildShell(); BuildServer(); BuildBots(); BuildMaps(); BuildLive(); BuildPlayer(); BuildExtras(); BuildServerExtras();
             ResumeLayout(true);
 
-            _timer = new WinTimer(); _timer.Interval = 2000; _timer.Tick += delegate { RefreshLive(); };
+            _timer = new WinTimer(); _timer.Interval = 2000; _timer.Tick += delegate { RefreshLive(); UpdateGameState(); };
             _nextTimer = new WinTimer(); _nextTimer.Interval = 700; _nextTimer.Tick += delegate { _nextTimer.Stop(); WriteNext(); };
         }
 
@@ -120,7 +120,7 @@ namespace BF2Coop
             RefreshChecks(true);
             if (_shotDir != null) { RunShots(); return; }
             ShowUpdateNotes();
-            AskNameOnce();
+            ShowWelcome(false);
             if (_cfg.B("AutoUpdate", true)) CheckForUpdates(false);
         }
 

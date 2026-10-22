@@ -27,7 +27,7 @@ Requires `mono-mcs` and `binutils-mingw-w64` (for `windres`). The script compile
 
 ## Tests
 
-`tests/Tests.cs` is a small console runner without a test framework. It covers settings conversion, bot planning, `coop_server.txt`, version comparison, checksums, the 4 GB and unlock patches (on synthetic files), LAN manifest diff and path safety, leaderboard, profile files, `mod.desc` and the command catalog. CI runs it on every push (`.github/workflows/ci.yml`).
+`tests/Tests.cs` is a small console runner without a test framework. It covers settings conversion, bot planning, `coop_server.txt`, version comparison, checksums, the 4 GB and unlock patches (on synthetic files), LAN manifest diff and path safety, leaderboard, profile files and profile management (create, rename, repair, delete), bot radio switch, `mod.desc` and the command catalog. CI runs it on every push (`.github/workflows/ci.yml`).
 
 ## Releasing
 

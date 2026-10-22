@@ -18,12 +18,14 @@ One single `.exe`, no installation, German and English. Two modes, switched at t
 **Play**
 - Automatic server discovery on the LAN – no IP addresses
 - **Join compatibility:** mod present and same version? If not, fetch the files from the server PC with one click
-- Health bar: green when this PC is ready, otherwise one **Fix** button (DirectX 9, firewall, 4 GB patch, unlock weapons, player name)
-- Settings: profile and name, graphics and audio presets, windowed mode, skip intro, ReShade, mods, updates, diagnostics
+- **First-start window:** game folder and player name in one step – the manager creates the BF2 profile
+- **Profiles in the manager:** change name (applies right away), new, repair (when BF2 hangs), delete – always with a backup
+- Health check: one **Fix** button when something is missing (DirectX 9, firewall, 4 GB patch, unlock weapons, player name)
+- Settings: graphics and audio presets, windowed mode, skip intro, optional ReShade with setup guide, mods, updates, diagnostics
 
 **Host** (includes everything above plus a **Join** button for your own server)
 - **Rotation with previews:** drag handles, right-click menu, shuffle, filter by map size, undo
-- **Bots per map** (★ custom values) and defaults per map size in one place, adaptive difficulty
+- **Bots per map** (★ custom values) and defaults per map size in one place, adaptive difficulty, bot radio on/off
 - **Live view** when the server runs: players with kick, upcoming maps, next map, restart round, message to all, console with command assistant, scheduled messages, evening leaderboard
 - **Clear timing:** ⚡ applies immediately · rotation and bots from the next map · everything else after a restart (one click)
 - **Your own default** for all mods, **recently started** configurations and presets
@@ -52,7 +54,8 @@ Windows 10/11 (.NET Framework 4.5+ is part of Windows) and Battlefield 2 with pa
 ## FAQ
 
 **No server appears.** Run *Fix* on both PCs (firewall). Same network? For VPN LANs (Radmin, ZeroTier, Hamachi) use *Server not found?* and enter the IP.
-**Join stops at the login screen.** *Settings › Profile › Log in automatically* must be on and an offline profile selected.
+**Join stops at the login screen.** *Settings › Game start › Log in automatically* must be on and an offline profile selected.
+**Game freezes when joining.** *Play › Profile › Repair profile*; switch ReShade off if installed; check on the server PC that the server is still running.
 **No unlock weapons.** Host: *Options › Server behaviour › all unlocks*. Every player: *Fix* (client unlock).
 
 ## Deutsch

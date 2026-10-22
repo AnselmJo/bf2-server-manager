@@ -111,6 +111,10 @@ namespace BF2Coop
             fb.Add(FolderButton(T("Sicherungen", "Backups"), delegate { return Path.Combine(DocsDir, "BF2_Backups"); }));
             fb.Add(FolderButton(T("Spielordner", "Game folder"), delegate { return GameDir; }));
             fb.Add(FolderButton(T("App-Daten", "App data"), delegate { return AppPaths.Dir; }));
+            FlatButton bDirChange = new FlatButton(T("Spielordner ändern …", "Change game folder …"), G.Edit, BtnKind.Ghost);
+            Theme.Tip.SetToolTip(bDirChange, T("Spielordner ändern\nNur nötig, wenn Battlefield 2 woanders liegt als erkannt.", "Change game folder\nOnly needed if Battlefield 2 is somewhere else than detected."));
+            bDirChange.Click += delegate { ChooseGameDir(); };
+            fb.Add(bDirChange);
             foreach (FlatButton b in fb) cFolders.Controls.Add(b);
             cFolders.Layouter = delegate (int w)
             {
@@ -202,19 +206,6 @@ namespace BF2Coop
             _bSetup.Text = _setupMode ? T("Jetzt einrichten", "Set up now") : (needs ? T("Bot-Modul installieren", "Install bot module") : (changed ? T("Übernehmen", "Apply") : T("Erneut einrichten", "Set up again")));
             _bSetup.Enabled = any && GameLocator.IsGameDir(GameDir) && !_busy;
             _bSetup.Kind = _setupMode || needs || changed ? BtnKind.Primary : BtnKind.Secondary;
-        }
-
-        void ChooseGameDir()
-        {
-            using (FolderBrowserDialog fb = new FolderBrowserDialog())
-            {
-                fb.Description = T("Battlefield-2-Ordner wählen (der Ordner mit bf2_w32ded.exe)", "Select the Battlefield 2 folder (the one containing bf2_w32ded.exe)");
-                if (GameLocator.IsGameDir(GameDir)) fb.SelectedPath = GameDir;
-                if (fb.ShowDialog(this) != DialogResult.OK) return;
-                if (!GameLocator.IsGameDir(fb.SelectedPath)) { DarkDialog.Info(this, T("Falscher Ordner", "Wrong folder"), T("In diesem Ordner liegt keine bf2_w32ded.exe.", "This folder does not contain bf2_w32ded.exe.")); return; }
-                _cfg.Set("GameDir", fb.SelectedPath.TrimEnd('\\')); _cfg.Save();
-                RefreshStatus();
-            }
         }
 
         void RunSetup()

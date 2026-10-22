@@ -26,6 +26,7 @@ namespace BF2Coop
         // ================================================================== Rollen
         void ApplyRoleCards()
         {
+            RefreshVersions();
             if (_exHost != null) _exHost.Masonry(_exCards, 2);
             if (_cSetup != null) { _cSetup.Title = _host ? T("Mods und Server-Einrichtung", "Mods and server setup") : "Mods"; _cSetup.Invalidate(); }
         }
@@ -315,26 +316,6 @@ namespace BF2Coop
         {
             try { using (UdpClient u = new UdpClient(port)) { } return true; }
             catch { return false; }
-        }
-
-        // ================================================================== Erster Start: Spielername
-        void AskNameOnce()
-        {
-            if (_cfg.B("NameAsked", false) || _shotDir != null) return;
-            _cfg.Set("NameAsked", true); _cfg.Save();
-            Bf2Profile p = Profiles.Default();
-            if (p == null || p.Online || (!string.IsNullOrEmpty(p.Nick) && !p.Nick.Equals("defaultPlayer", StringComparison.OrdinalIgnoreCase))) return;
-            string name = DarkDialog.Input(this, T("Willkommen!", "Welcome!"), T("Wie heißt du im Spiel? So sehen dich die anderen.", "What is your in-game name? This is how others see you."), "");
-            name = Profiles.CleanName(name);
-            if (name.Length == 0) return;
-            try
-            {
-                Dictionary<string, string> v = new Dictionary<string, string>(); v["setName"] = "\"" + name + "\""; v["setNick"] = "\"" + name + "\"";
-                Profiles.Set(Path.Combine(p.Dir, "Profile.con"), "LocalProfile", v);
-                Toast(T("Hallo ", "Hello ") + name + "!", ToastKind.Ok);
-                RefreshChecks(true);
-            }
-            catch (Exception ex) { Toast(ex.Message, ToastKind.Error); }
         }
 
         // ================================================================== Diagnose: Server-Log

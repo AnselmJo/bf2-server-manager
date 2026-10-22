@@ -2,16 +2,24 @@
 
 Switch between **Play** and **Host** at the top left. Every setting has an **ⓘ** with an explanation, the default and when a change applies. Everything is saved automatically.
 
+## First start
+
+A welcome window asks for two things: the **game folder** (found automatically; otherwise *Choose folder*) and your **player name**. The manager creates your Battlefield 2 profile if there is none. *Later* skips it – the **Your player** card on *Play* asks again. Run it again any time: *Profile › Run first-time setup again*.
+
 ## Play
+
+**Your player** – your name, **Change name** (applies right away), profile switcher when you have several, and the *Profile* menu: **New profile**, **Repair profile** (fresh files, same name – helps when BF2 hangs at start or when joining), **Delete profile**, open the profile folder. Every change is backed up to `Documents\BF2_Backups`. While BF2 runs, the card offers **Game stuck? Close it** with tips.
 
 **Play** – the main view. Running servers on the network appear automatically with map, size, mode, players, bots and mod.
 - **✓ Compatible** → click **Join**. The game starts in the server's mod, logs in and joins.
 - **⚠ Mod missing / different version** → **Get files from server** compares your mod with the server PC and copies only what differs (each file is verified).
 - **Manager x.y – update** appears when the server PC has a newer manager.
 - No server? *Start game without server* opens the main menu. *Server not found?* lets you enter an IP (only needed for VPN LANs).
-- The bar at the top is green when this PC is ready; otherwise **Fix** repairs everything with one Windows prompt.
+- When something on this PC needs attention, a yellow bar with **Fix** appears at the top; when all is well the card just shows *✓ This PC is ready*.
 
-**Settings** – This PC (check and fixes), Profile (name, windowed, skip intro, log in automatically), Graphics, Audio, Mods (versions), Updates, Diagnostics, Language, Folders.
+**Settings** – This PC (check and fixes, click to expand), Game start (windowed, skip intro, log in automatically), Graphics (incl. optional ReShade), Audio, Mods (versions), Updates, Diagnostics, Language, Folders (incl. *Change game folder*).
+
+**ReShade (optional)** – image filters for a sharper, more vivid look. The manager does not ship ReShade; *Set up* explains how to install it from reshade.me (Direct3D 9, select BF2.exe). Afterwards a switch turns it on and off. If BF2 freezes, switch it off first.
 
 ## Host
 
@@ -24,7 +32,7 @@ On the first switch to *Host* you set up the server once (pick mods, one Windows
 
 While the server runs, **Server** shows the **live view**: players (kick), current and upcoming maps, next map now, restart round, message to all, console with **Commands** assistant, scheduled messages, evening leaderboard. *Edit rotation & bots* switches to the configuration – changes apply from the next map and are sent to the server automatically.
 
-**Bots** – default bot values per map size (16/32/64), humans per team, adaptive difficulty, bot names and the mod's AI file (*Advanced*).
+**Bots** – default bot values per map size (16/32/64), humans per team, adaptive difficulty, **bot radio messages** on/off (applies at the next server start), bot names and the mod's AI file (*Advanced*).
 
 **Options** – every server setting. Cards *Server behaviour* (automatic restart after a crash or hang, server unlocks, LAN service) and *Default* (use current values as your default for all mods, reset to default, factory settings). While the server runs: ⚡ values apply immediately, the bar shows how many changes need a restart and offers **Restart now**.
 

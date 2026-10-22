@@ -1,6 +1,7 @@
 // Hauptfenster: Seite Spieler (Profil, Spielen, Server im LAN, Grafik, Audio) - BF2 Manager. C# 5.
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -15,7 +16,7 @@ namespace BF2Coop
         ScrollHost _plHost; readonly List<Card> _plCards = new List<Card>();
         readonly List<Card> _profileCards = new List<Card>(); Banner _plHealth; FlatButton _bHealth;
         Card _cPlay, _cLan, _cGfx, _cAudio;
-        SelectBox _plMod, _plProfile, _plRes; TextField _plName; ToggleSwitch _plWindowed, _plIntro, _plAutoLogin, _plReShade, _plEax;
+        SelectBox _plMod, _plRes; ToggleSwitch _plWindowed, _plIntro, _plAutoLogin, _plReShade, _plEax;
         Segmented _plQuality, _plSound; Slider _plView, _plMusic, _plFx;
         readonly List<Control> _lanRows = new List<Control>(); string _lanSig = "";
         Para _lanEmpty, _syncText; ButtonRow _syncButtons; FlatButton _bSyncGo, _bSyncCancel;
@@ -55,37 +56,28 @@ namespace BF2Coop
             _bHealth = new FlatButton(T("Beheben", "Fix"), G.Shield, BtnKind.Primary);
             _bHealth.Click += delegate { FixChecks(null); };
             FlatButton bDetails = new FlatButton(T("Details", "Details"), null, BtnKind.Ghost);
-            bDetails.Click += delegate { SelectPage(PgExtras); _exHost.ScrollTo(0, true); };
+            bDetails.Click += delegate { _cCheck.Collapsed = false; SelectPage(PgExtras); _exHost.Masonry(_exCards, 2); _exHost.ScrollTo(0, true); };
             _plHealth.AddRight(_bHealth); _plHealth.AddRight(bDetails);
             Dock3(_pages[PgPlayer], ph, _plHealth, _plHost);
             _plSave = new WinTimer(); _plSave.Interval = 700; _plSave.Tick += delegate { _plSave.Stop(); SavePlayer(); };
 
-            // ---- Spielen
-            _cPlay = new Card(T("Profil", "Profile"), G.Contact);
+            BuildMe();
+
+            // ---- Spielstart
+            _cPlay = new Card(T("Spielstart", "Game start"), G.Play);
             _plMod = new SelectBox(null, Dpi.D(220));
             _plMod.SelectionChanged += delegate { if (_plLoading) return; _cfg.Set("PlayMod", _plMod.SelectedItem); _cfg.Save(); };
-            _plProfile = new SelectBox(null, Dpi.D(240));
-            _plProfile.SelectionChanged += delegate
-            {
-                if (_plLoading) return;
-                int i = _plProfile.SelectedIndex;
-                if (i >= 0 && i < _profiles.Count) { _cfg.Set("PlayProfile", _profiles[i].Id); _cfg.Save(); Profiles.SetDefault(_profiles[i].Id); LoadPlayerValues(); }
-            };
-            _plName = new TextField(null, T("Dein Name im Spiel", "Your in-game name"));
-            _plName.ValueChanged += delegate { if (!_plLoading) { _plSave.Stop(); _plSave.Start(); } };
             _plWindowed = new ToggleSwitch(); _plWindowed.SetSilent(_cfg.B("PlayWindowed", false));
             _plWindowed.CheckedChanged += delegate { _cfg.Set("PlayWindowed", _plWindowed.Checked); _cfg.Save(); };
             _plIntro = new ToggleSwitch(); _plIntro.SetSilent(_cfg.B("SkipIntro", true));
             _plIntro.CheckedChanged += delegate { _cfg.Set("SkipIntro", _plIntro.Checked); _cfg.Save(); if (!_plLoading) { _plSave.Stop(); _plSave.Start(); } };
             _plAutoLogin = new ToggleSwitch(); _plAutoLogin.SetSilent(_cfg.B("AutoLogin", true));
             _plAutoLogin.CheckedChanged += delegate { _cfg.Set("AutoLogin", _plAutoLogin.Checked); _cfg.Save(); };
-            FormRow rProf = new FormRow(T("Profil", "Profile"), T("BF2-Profil aus Dokumente\\Battlefield 2\\Profiles. Neue Profile legt man im Spiel an.", "BF2 profile from Documents\\Battlefield 2\\Profiles. New profiles are created in the game."), _plProfile, _plProfile.Width, false);
-            FormRow rName = new FormRow(T("Spielername", "Player name"), T("Wird in Profile.con gespeichert. Nur Buchstaben, Ziffern und Zeichen ohne Leerzeichen, höchstens 24 Zeichen.", "Saved in Profile.con. Letters, digits and symbols without spaces, at most 24 characters."), _plName, Dpi.D(220), false);
             FormRow rWin = new FormRow(T("Fenstermodus", "Windowed"), T("Startet BF2 im Fenster mit der Auflösung aus der Grafik-Karte.", "Starts BF2 in a window with the resolution from the graphics card."), _plWindowed, _plWindowed.Width, false);
             FormRow rIntro = new FormRow(T("Intro überspringen", "Skip intro"), T("Überspringt die Intro-Videos – beim Start über den Manager und dauerhaft im Profil.", "Skips the intro videos – when started from the manager and permanently in the profile."), _plIntro, _plIntro.Width, false);
             FormRow rLogin = new FormRow(T("Automatisch anmelden", "Log in automatically"), T("Übergibt das Profil beim Start (+playerName), damit man beim direkten Beitreten nicht im Anmeldemenü hängen bleibt. Nur für Offline-Profile.", "Passes the profile at start (+playerName) so joining directly does not stop at the login menu. Offline profiles only."), _plAutoLogin, _plAutoLogin.Width, false);
-            foreach (Control c in new Control[] { rProf, rName, rWin, rIntro, rLogin }) _cPlay.Controls.Add(c);
-            _cPlay.Layouter = Stack(_cPlay, delegate { return new List<Control> { rProf, rName, rWin, rIntro, rLogin }; });
+            foreach (Control c in new Control[] { rWin, rIntro, rLogin }) _cPlay.Controls.Add(c);
+            _cPlay.Layouter = Stack(_cPlay, delegate { return new List<Control> { rWin, rIntro, rLogin }; });
 
             // ---- Server im Netzwerk (Hauptansicht für Spieler)
             _cLan = new Card(T("Server im Netzwerk", "Servers on the network"), G.Globe);
@@ -131,13 +123,16 @@ namespace BF2Coop
             FormRow rRes = new FormRow(T("Auflösung", "Resolution"), T("Auflösungen, die dein Bildschirm unterstützt.", "Resolutions your monitor supports."), _plRes, _plRes.Width, false);
             FormRow rQ = new FormRow(T("Qualität", "Quality"), T("Setzt Gelände, Modelle, Licht, Schatten, Effekte und Texturen gemeinsam. Leer = eigene Mischung aus dem Spielmenü.", "Sets terrain, models, lighting, shadows, effects and textures together. Empty = custom mix from the game menu."), _plQuality, _plQuality.Width, false);
             FormRow rView = new FormRow(T("Sichtweite", "View distance"), T("Anteil der Sichtweite (50–100 %). Mehr kostet Leistung.", "Share of the view distance (50–100 %). More costs performance."), _plView, Dpi.D(200), false);
-            FormRow rRs = new FormRow("ReShade", T("Grafikfilter (Schärfe, Farben, Kantenglättung) nur auf diesem PC. Wird aus dem Ordner _LAN\\ReShade installiert bzw. über d3d9.dll an- und ausgeschaltet.", "Graphics filters (sharpness, colours, anti-aliasing) on this PC only. Installed from the _LAN\\ReShade folder or toggled via d3d9.dll."), _plReShade, _plReShade.Width, false);
+            FormRow rRs = new FormRow("ReShade", T("ReShade an/aus\nBildfilter (Schärfe, Farben, Kantenglättung) nur auf diesem PC. Schaltet die d3d9.dll im Spielordner an oder aus.\n\nFriert BF2 ein oder stürzt ab: zuerst hier ausschalten.", "ReShade on/off\nImage filters (sharpness, colours, anti-aliasing) on this PC only. Switches the d3d9.dll in the game folder on or off.\n\nIf BF2 freezes or crashes: switch it off here first."), _plReShade, _plReShade.Width, false);
+            FlatButton bRsHelp = new FlatButton(T("Einrichten …", "Set up …"), G.Info, BtnKind.Secondary); bRsHelp.Height = Dpi.D(30); bRsHelp.Fit();
+            bRsHelp.Click += delegate { ReShadeHelp(); };
+            FormRow rRsSetup = new FormRow(T("ReShade (optional)", "ReShade (optional)"), T("ReShade\nOptionale Bildfilter für einen schärferen, kräftigeren Look. Nicht nötig zum Spielen. „Einrichten“ zeigt, wie es geht.", "ReShade\nOptional image filters for a sharper, more vivid look. Not needed to play. “Set up” shows how."), bRsHelp, bRsHelp.Width, false);
             FlatButton bCache = new FlatButton(T("Shader-Cache leeren", "Clear shader cache"), G.Delete, BtnKind.Ghost);
             Theme.Tip.SetToolTip(bCache, T("Hilft bei Grafikfehlern nach Mod- oder Treiberwechsel. BF2 baut den Cache beim nächsten Start neu.", "Helps with graphics glitches after changing mods or drivers. BF2 rebuilds the cache at the next start."));
             bCache.Click += delegate { ClearShaderCache(); };
             ButtonRow gb = Buttons(bCache);
-            foreach (Control c in new Control[] { rRes, rQ, rView, rRs, gb }) _cGfx.Controls.Add(c);
-            _cGfx.Layouter = Stack(_cGfx, delegate { return new List<Control> { rRes, rQ, rView, rRs, gb }; });
+            foreach (Control c in new Control[] { rRes, rQ, rView, rRs, rRsSetup, gb }) _cGfx.Controls.Add(c);
+            _cGfx.Layouter = Stack(_cGfx, delegate { return new List<Control> { rRes, rQ, rView, ReShadeAvailable ? (Control)rRs : rRsSetup, gb }; });
 
             // ---- Audio
             _cAudio = new Card("Audio", G.Mic);
@@ -153,7 +148,7 @@ namespace BF2Coop
             foreach (Control c in new Control[] { rFx, rMu, rSq, rEax }) _cAudio.Controls.Add(c);
             _cAudio.Layouter = Stack(_cAudio, delegate { return new List<Control> { rFx, rMu, rSq, rEax }; });
 
-            _plCards.Add(_cLan);
+            _plCards.Add(_cMe); _plCards.Add(_cLan);
             _profileCards.AddRange(new Card[] { _cPlay, _cGfx, _cAudio });
             foreach (Card c in _plCards) _plHost.Canvas.Controls.Add(c);
             _plHost.Resize += delegate { _plHost.Masonry(_plCards, 1); };
@@ -167,10 +162,7 @@ namespace BF2Coop
                 List<string> mods = GameLocator.IsGameDir(GameDir) ? GameLocator.AllMods(GameDir) : new List<string>();
                 _plMod.SetItems(mods, PlayMod);
                 _profiles = Profiles.All();
-                List<string> names = new List<string>();
-                foreach (Bf2Profile p in _profiles) names.Add(p.Display);
-                Bf2Profile cur = PlayProfile;
-                _plProfile.SetItems(names, cur != null ? cur.Display : null);
+                RefreshMe();
                 LoadPlayerValues();
             }
             finally { _plLoading = false; }
@@ -181,8 +173,6 @@ namespace BF2Coop
         {
             bool old = _plLoading; _plLoading = true;
             Bf2Profile p = PlayProfile;
-            _plName.Value = p != null ? (p.Nick ?? p.Name ?? "") : "";
-            _plName.Enabled = p != null && !p.Online;
             string vc = VideoCon;
             string res = Profiles.Get(vc, "VideoSettings", "setResolution") ?? "";
             List<string> modes = DisplayModes.List();
@@ -208,8 +198,9 @@ namespace BF2Coop
             _plReShade.Enabled = File.Exists(Path.Combine(GameDir, "d3d9.dll")) || File.Exists(Path.Combine(GameDir, "d3d9.dll.off")) || Directory.Exists(Path.Combine(AppPaths.LanDir(GameDir), "ReShade"));
             bool any = p != null;
             foreach (Control c in new Control[] { _plRes, _plQuality, _plView, _plFx, _plMusic, _plSound, _plEax }) c.Enabled = any;
-            _cPlay.SetNote(p == null ? T("kein Profil", "no profile") : "");
-            _cGfx.SetNote(_plQualityCustom ? T("eigene Mischung", "custom mix") : "");
+            if (_cGfx.Width > 0 && _page == PgExtras) _exHost.Masonry(_exCards, 2);
+            _cGfx.SetNote(p == null ? T("erst ein Profil anlegen (Seite Spielen)", "create a profile first (Play page)") : "");
+            if (p != null) _cGfx.SetNote(_plQualityCustom ? T("eigene Mischung", "custom mix") : "");
             _plLoading = old;
         }
 
@@ -231,14 +222,6 @@ namespace BF2Coop
                     List<string> files = new List<string>();
                     foreach (string f in new string[] { "Profile.con", "Video.con", "Audio.con", "General.con" }) files.Add(Path.Combine(p.Dir, f));
                     Util.Backup(files, DocsDir); _profileBackedUp = true;
-                }
-                string name = Profiles.CleanName(_plName.Value);
-                if (!p.Online && name.Length > 0 && name != (p.Nick ?? ""))
-                {
-                    Dictionary<string, string> v = new Dictionary<string, string>();
-                    v["setName"] = "\"" + name + "\""; v["setNick"] = "\"" + name + "\"";
-                    Profiles.Set(Path.Combine(p.Dir, "Profile.con"), "LocalProfile", v);
-                    p.Name = p.Nick = name;
                 }
                 Dictionary<string, string> g = new Dictionary<string, string>();
                 g["setViewIntroMovie"] = _plIntro.Checked ? "0" : "1";
@@ -281,6 +264,26 @@ namespace BF2Coop
             catch (UnauthorizedAccessException) { Toast(T("Keine Schreibrechte im Spielordner – PC-Check › Schreibrechte.", "No write access to the game folder – PC check › write access."), ToastKind.Error); }
             catch (Exception ex) { Toast(ex.Message, ToastKind.Error); }
             bool old = _plLoading; _plLoading = true; _plReShade.SetSilent(File.Exists(dll)); _plLoading = old;
+        }
+
+        // Schalter nur, wenn es etwas zu schalten gibt: installiertes ReShade (auch ausgeschaltet) oder Paket im LAN-Ordner
+        bool ReShadeAvailable
+        {
+            get { return File.Exists(Path.Combine(GameDir, "d3d9.dll")) || File.Exists(Path.Combine(GameDir, "d3d9.dll.off")) || Directory.Exists(Path.Combine(AppPaths.LanDir(GameDir), "ReShade")); }
+        }
+
+        void ReShadeHelp()
+        {
+            int r = DarkDialog.Ask(this, T("ReShade einrichten", "Set up ReShade"),
+                T("ReShade legt Filter über das fertige Bild: schärfer, kräftigere Farben, bessere Kantenglättung. Texturen und Modelle bleiben gleich – es ist ein aufpolierter Look, keine neue Grafik. Es kostet etwas Leistung und ist zum Spielen nicht nötig.\n\n" +
+                  "So geht's:\n1. ReShade auf reshade.me herunterladen und starten.\n2. BF2.exe im Spielordner auswählen.\n3. Als Schnittstelle „Direct3D 9“ wählen.\n4. Effekte wählen, z. B. SMAA, LumaSharpen, Vibrance.\n5. Manager neu öffnen – hier erscheint dann der Schalter an/aus.\nIm Spiel öffnet die Pos1-Taste das ReShade-Menü.\n\n" +
+                  "⚠ Friert BF2 ein oder stürzt ab, ReShade hier zuerst ausschalten. Manche Online-Server mit Anti-Cheat beanstanden ReShade; im LAN ist das kein Thema.",
+                  "ReShade puts filters over the finished image: sharper, more vivid colours, better anti-aliasing. Textures and models stay the same – it is a polished look, not new graphics. It costs some performance and is not needed to play.\n\n" +
+                  "How to:\n1. Download ReShade from reshade.me and run it.\n2. Select BF2.exe in the game folder.\n3. Choose “Direct3D 9” as the rendering API.\n4. Pick effects, e.g. SMAA, LumaSharpen, Vibrance.\n5. Reopen the manager – the on/off switch then appears here.\nIn game the Home key opens the ReShade menu.\n\n" +
+                  "⚠ If BF2 freezes or crashes, switch ReShade off here first. Some online servers with anti-cheat object to ReShade; on LAN this does not matter."),
+                1, false, T("Schließen", "Close"), T("reshade.me öffnen", "Open reshade.me"));
+            try { if (r == 1) Process.Start("https://reshade.me"); }
+            catch (Exception ex) { Toast(ex.Message, ToastKind.Error); }
         }
 
         void ClearShaderCache()
@@ -327,19 +330,18 @@ namespace BF2Coop
         void RefreshPlayHealth()
         {
             if (_plHealth == null) return;
+            // Alles in Ordnung: keine Leiste, nur ein kleiner Hinweis in der Spielerkarte. Probleme: gelbe Leiste mit „Beheben“.
             bool ok = _checks.Count > 0 && _checkBad == 0;
-            _plHealth.Visible = _checks.Count > 0;
-            _plHealth.Tint = ok ? Theme.Green : Theme.Amber;
-            _plHealth.Glyph = ok ? G.Check : G.Warn;
-            if (ok) _plHealth.Text2 = T("Dieser PC ist bereit.", "This PC is ready.");
-            else
+            _plHealth.Visible = _checks.Count > 0 && !ok;
+            _plHealth.Tint = Theme.Amber; _plHealth.Glyph = G.Warn;
+            if (!ok)
             {
                 List<string> t = new List<string>();
                 foreach (CheckItem c in _checks) if (c.NeedsFix) t.Add(c.Title);
                 _plHealth.Text2 = (t.Count == 1 ? T("1 Punkt offen: ", "1 open item: ") : t.Count + T(" Punkte offen: ", " open items: ")) + string.Join(", ", t.ToArray());
             }
-            _bHealth.Visible = !ok;
             _plHealth.PerformLayout(); _plHealth.Invalidate();
+            if (_cMe != null) { _cMe.NoteColor = Theme.Green; _cMe.SetNote(ok ? T("✓ Dieser PC ist bereit", "✓ This PC is ready") : ""); }
         }
 
         // Liste der laufenden Server neu aufbauen, wenn sich etwas geändert hat

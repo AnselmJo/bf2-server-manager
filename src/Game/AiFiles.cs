@@ -73,6 +73,42 @@ namespace BF2Coop
         }
     }
 
+    // ai\AIRadioMessages.ai: legt fest, welche Bot-Meldungen als Funkspruch hörbar sind.
+    // Aus = die Zeilen werden mit Markierung auskommentiert; Bots handeln weiter wie gewohnt, nur ohne Funk.
+    public static class BotRadio
+    {
+        const string Mark = "rem bf2m-off ";
+        static readonly Regex Rx = new Regex(@"^\s*aiComm\.addAIRadioMessage\b", RegexOptions.IgnoreCase);
+
+        public static string Find(string gameDir, string mod) { return BotNames.FindIn(Path.Combine(gameDir, "mods", mod, "ai"), "airadiomessages.ai"); }
+
+        // true = Funk an, false = aus, null = Datei fehlt
+        public static bool? State(string path)
+        {
+            if (path == null || !File.Exists(path)) return null;
+            int on = 0, off = 0;
+            foreach (string l in Util.ReadLines(path))
+            {
+                if (Rx.IsMatch(l)) on++;
+                else if (l.StartsWith(Mark) && Rx.IsMatch(l.Substring(Mark.Length))) off++;
+            }
+            if (on == 0 && off == 0) return null;
+            return on > 0;
+        }
+
+        public static void Set(string path, bool on, string docsDir)
+        {
+            Util.Backup(new string[] { path }, docsDir);
+            List<string> lines = new List<string>(Util.ReadLines(path));
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (!on && Rx.IsMatch(lines[i])) lines[i] = Mark + lines[i];
+                else if (on && lines[i].StartsWith(Mark)) lines[i] = lines[i].Substring(Mark.Length);
+            }
+            Util.WriteAtomic(path, string.Join("\r\n", lines.ToArray()) + "\r\n", Util.Ansi);
+        }
+    }
+
     public class AiFile
     {
         public string Path; public int Override = -1, MaxBots = -1, IncludeHumans = -1; public string Skill;

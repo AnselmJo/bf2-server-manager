@@ -32,7 +32,7 @@ Fresh Windows installations often miss `d3dx9_xx.dll`. Microsoft allows passing 
 
 ### ReShade (optional)
 
-Put a working ReShade setup (the `d3d9.dll`, `ReShade.ini`, preset and shader folders) into `_LAN\ReShade`. Players can switch it on and off under **Settings › Graphics › ReShade**. It only affects their own screen.
+Install ReShade once into your game folder (reshade.me, select `BF2.exe`, Direct3D 9) – *Settings › Graphics › ReShade › Set up* shows the steps. To hand it on, put the working setup (the `d3d9.dll`, `ReShade.ini`, preset and shader folders) into `_LAN\ReShade`. Players can switch it on and off under **Settings › Graphics › ReShade**. It only affects their own screen. If BF2 freezes, switch ReShade off first.
 
 ## 2. Copy the folder to every PC
 
@@ -41,7 +41,7 @@ USB stick, network share – whatever is fastest. Changed something later? Playe
 ## 3. On every player PC
 
 1. Start `BF2Manager.exe` (SmartScreen: *More info › Run anyway*).
-2. Enter your player name when asked and click **Fix** if the bar at the top is yellow (one Windows prompt).
+2. The welcome window asks for the game folder and your player name – the manager creates the profile. Click **Fix** if the bar at the top is yellow (one Windows prompt).
 3. When the host starts the server it appears on the **Play** page → **Join**.
 
 ## 4. On the server PC
@@ -66,7 +66,8 @@ USB stick, network share – whatever is fastest. Changed something later? Playe
 |---|---|
 | Server not listed | **Fix** on **both** PCs (firewall). Same network? VPN LAN: *Server not found?* and enter the IP. |
 | "Modified content" or kicked after joining | Play › Get files from server |
-| Join stops at the login screen | Settings › Profile › Log in automatically on; offline profile selected |
+| Join stops at the login screen | Settings › Game start › Log in automatically on; offline profile selected |
+| Game freezes when joining | Play › *Game stuck? Close it*, then Play › Profile › **Repair profile**; ReShade off; check that the server still runs |
 | Game does not start / missing d3dx9 file | **Fix** (DirectX) |
 | Crash when loading big maps | **Fix** (4 GB memory patch) |
 | No unlock weapons | Host: Options › Server behaviour › all unlocks. Players: **Fix** (client unlock) |

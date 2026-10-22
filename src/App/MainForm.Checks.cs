@@ -14,7 +14,7 @@ namespace BF2Coop
     {
         Card _cCheck, _cLanHost, _cMaint, _cVersions;
         readonly List<Control> _checkItems = new List<Control>(); List<CheckItem> _checks = new List<CheckItem>();
-        FlatButton _bFixAll; int _checkBad; bool _checking; DateTime _checkedAt = DateTime.MinValue;
+        FlatButton _bFixAll; int _checkBad; bool _checking; bool? _checkOkShown; DateTime _checkedAt = DateTime.MinValue;
         ToggleSwitch _lanHostToggle; FormRow _lanHostRow; Para _diagErrors; Para _lanInfo, _versionsText, _maintLog;
 
         // Ordnet Elemente untereinander an. Nur die gelieferten Elemente sind sichtbar (Kopf-Elemente ausgenommen).
@@ -51,6 +51,8 @@ namespace BF2Coop
             bRecheck.Click += delegate { RefreshChecks(true); };
             _cCheck.Controls.Add(_bFixAll); _cCheck.Controls.Add(bRecheck);
             _cCheck.HeaderControls.Add(_bFixAll); _cCheck.HeaderControls.Add(bRecheck);
+            _cCheck.Collapsible = true; _cCheck.Collapsed = true;
+            _cCheck.Toggled += delegate { _exHost.Masonry(_exCards, 2); if (!_cCheck.Collapsed) _exHost.EnsureVisible(_cCheck); };
             Func<int, int> stack = Stack(_cCheck, delegate { return new List<Control>(_checkItems); });
             _cCheck.Layouter = delegate (int w)
             {
@@ -110,7 +112,10 @@ namespace BF2Coop
         {
             if (_versionsText == null) return;
             StringBuilder sb = new StringBuilder();
-            sb.Append(AppInfo.Name).Append(" ").Append(AppInfo.Version).Append(T("  ·  Bot-Modul ", "  ·  bot module ")).Append(AppInfo.ModuleVersion).Append('\n');
+            // Bot-Modul-Versionen interessieren nur auf dem Server-PC
+            sb.Append(AppInfo.Name).Append(" ").Append(AppInfo.Version);
+            if (_host) sb.Append(T("  ·  Bot-Modul ", "  ·  bot module ")).Append(AppInfo.ModuleVersion);
+            sb.Append('\n');
             if (GameLocator.IsGameDir(GameDir))
             {
                 sb.Append("BF2.exe ").Append(GameLocator.FileVersion(Path.Combine(GameDir, "BF2.exe")) ?? "–");
@@ -122,7 +127,7 @@ namespace BF2Coop
                     if (!string.IsNullOrEmpty(mi.Title) && mi.Title != m) sb.Append(" – ").Append(mi.Title);
                     if (!string.IsNullOrEmpty(mi.Version)) sb.Append(" ").Append(mi.Version);
                     ModStatus s;
-                    if (_status.TryGetValue(m, out s) && s.Installed) sb.Append(T("  (Bot-Modul ", "  (bot module ")).Append(s.Version).Append(")");
+                    if (_host && _status.TryGetValue(m, out s) && s.Installed) sb.Append(T("  (Bot-Modul ", "  (bot module ")).Append(s.Version).Append(")");
                     sb.Append('\n');
                 }
             }
@@ -185,8 +190,9 @@ namespace BF2Coop
                 _cCheck.Controls.Add(row); _cCheck.Controls.Add(p);
             }
             _cCheck.SetNote(_checkBad == 0 ? T("alles in Ordnung", "all good") : _checkBad + T(" offen", " open"));
-            // Alles grün: Details eingeklappt; Probleme: aufgeklappt
-            _cCheck.Collapsible = true; _cCheck.Collapsed = _checkBad == 0;
+            // Alles grün: Details eingeklappt; Probleme: aufgeklappt. Nur beim Wechsel des Zustands, sonst bleibt die Wahl des Nutzers.
+            bool okNow = _checkBad == 0;
+            if (_checkOkShown != okNow) { _cCheck.Collapsed = okNow; _checkOkShown = okNow; }
             List<string> errs = new List<string>();
             foreach (CheckItem c in items) if (c.NeedsFix) errs.Add("⚠ " + c.Title + ": " + c.Detail);
             foreach (ModStatus s2 in _status.Values) if (_mods.Contains(s2.Mod) && !s2.Ok) errs.Add("⚠ " + s2.Mod + T(": Bot-Modul nicht bereit", ": bot module not ready"));
@@ -208,11 +214,12 @@ namespace BF2Coop
             {
                 if (only != null && c != only) continue;
                 if (!c.NeedsFix) continue;
-                if (c.Id == "profile") { if (only != null) { SelectPage(PgPlayer); if (_plName != null) _plName.Box.Focus(); } continue; }
+                if (c.Id == "profile") { FixProfile(); continue; }
+                if (c.Id == "game") { ChooseGameDir(); continue; }
                 if (c.Url != null) { if (only != null) try { Process.Start(c.Url); } catch { } continue; }
                 tasks.AddRange(c.Tasks);
             }
-            if (tasks.Count == 0) { if (only == null) Toast(T("Nichts automatisch zu beheben.", "Nothing to fix automatically."), ToastKind.Info); return; }
+            if (tasks.Count == 0) return;
             if (Srv.GameRunning()) { Toast(T("Bitte zuerst Battlefield 2 beenden.", "Please close Battlefield 2 first."), ToastKind.Warn); return; }
             _bFixAll.Enabled = false;
             RunTasks(tasks, delegate (bool ok, string result)
@@ -222,6 +229,15 @@ namespace BF2Coop
                 Toast(ok ? T("Behoben.", "Fixed.") : (log.Length > 0 ? log : T("Nicht alles konnte behoben werden.", "Not everything could be fixed.")), ok ? ToastKind.Ok : ToastKind.Warn);
                 RefreshStatus(); RefreshChecks(true);
             });
+        }
+
+        // Profil fehlt oder heißt noch „defaultPlayer“: auf der Seite Spielen direkt den Namen abfragen
+        void FixProfile()
+        {
+            if (!_host) SelectPage(PgPlayer);
+            if (CurrentMeState == MeState.NoProfile && !_host) { _meField.Box.Focus(); return; }
+            Bf2Profile p = PlayProfile;
+            if (p == null) CreateProfileFlow(); else RenameFlow();
         }
 
         void Repair()

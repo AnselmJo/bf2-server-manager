@@ -28,7 +28,7 @@ namespace BF2Coop
 {
     public partial class MainForm
     {
-        Card _cAdapt; ToggleSwitch _adaptToggle; NumberBox _adaptStep, _adaptMax;
+        Card _cAdapt, _cRadio; ToggleSwitch _adaptToggle, _radioToggle; NumberBox _adaptStep, _adaptMax; FormRow _rowRadio;
         // ================================================================== Seite Bots
         void BuildBots()
         {
@@ -109,7 +109,14 @@ namespace BF2Coop
             _cAdapt.Layouter = delegate (int w) { int y = _cAdapt.HeaderH - Dpi.D(4); foreach (FormRow r in new FormRow[] { rA, rS, rLim }) { r.SetBounds(Dpi.D(6), y, w - Dpi.D(12), r.Height); y += r.Height; } return y + Dpi.D(12); };
             EventHandler adc = delegate { if (!_applying) MarkDirty(); };
             _adaptToggle.CheckedChanged += adc; _adaptStep.ValueChanged += adc; _adaptMax.ValueChanged += adc;
-            _botCards.Add(_cAdapt);
+            // ---- Funk der Bots
+            _cRadio = MakeCard("bot.radio", T("Funk", "Radio"), G.Mic, false);
+            _radioToggle = new ToggleSwitch();
+            _rowRadio = new FormRow(T("Bot-Funksprüche", "Bot radio messages"), T("Bot-Funksprüche\nAus = Bots rufen nicht mehr „Medic!“, „Roger that“ usw. über Funk. Sie spielen genauso weiter, nur leiser.\nÄndert ai\\AIRadioMessages.ai des Mods (Sicherung wird angelegt).\n\nWirkt beim nächsten Serverstart. Gilt für alle Spieler auf diesem Server.", "Bot radio messages\nOff = bots no longer call “Medic!”, “Roger that” etc. over the radio. They play just the same, only quieter.\nChanges the mod's ai\\AIRadioMessages.ai (a backup is created).\n\nApplies at the next server start. Affects everyone on this server."), _radioToggle, _radioToggle.Width, false);
+            _radioToggle.CheckedChanged += delegate { if (!_applying) SetBotRadio(_radioToggle.Checked); };
+            _cRadio.Controls.Add(_rowRadio);
+            _cRadio.Layouter = delegate (int w) { int y = _cRadio.HeaderH - Dpi.D(4); _rowRadio.SetBounds(Dpi.D(6), y, w - Dpi.D(12), _rowRadio.Height); return y + _rowRadio.Height + Dpi.D(12); };
+            _botCards.Add(_cAdapt); _botCards.Add(_cRadio);
             _botCards.Add(_cAi); _botCards.Add(_cNames);
             _cAi.Hidden = _cNames.Hidden = !_botAdvToggle.Checked;
             foreach (Card c in _botCards) { _botHost.Canvas.Controls.Add(c); if (c.Collapsible) HookCollapse(c, _botHost, _botCards, 3); }
@@ -144,6 +151,31 @@ namespace BF2Coop
             _names.Enabled = _namesPath != null;
             _aiDirty = _namesDirty = false;
             UpdateNamesNote();
+            LoadBotRadio();
+        }
+
+        void LoadBotRadio()
+        {
+            bool old = _applying; _applying = true;
+            bool? st = BotRadio.State(BotRadio.Find(GameDir, _mod));
+            _radioToggle.SetSilent(st != false);
+            _radioToggle.Enabled = st != null;
+            _cRadio.SetNote(st == null ? T("AIRadioMessages.ai fehlt", "AIRadioMessages.ai missing") : (st == true ? "" : T("Bots funken nicht", "bots stay silent")));
+            _applying = old;
+        }
+
+        void SetBotRadio(bool on)
+        {
+            string path = BotRadio.Find(GameDir, _mod);
+            try
+            {
+                if (path == null) throw new FileNotFoundException(T("AIRadioMessages.ai fehlt in diesem Mod.", "AIRadioMessages.ai is missing in this mod."));
+                BotRadio.Set(path, on, DocsDir);
+                Toast((on ? T("Bot-Funk an.", "Bot radio on.") : T("Bot-Funk aus.", "Bot radio off.")) + (_running ? T(" Wirkt nach einem Server-Neustart.", " Applies after a server restart.") : T(" Wirkt beim nächsten Serverstart.", " Applies at the next server start.")), ToastKind.Ok);
+            }
+            catch (UnauthorizedAccessException) { Toast(T("Keine Schreibrechte im Spielordner – Einstellungen › Dieser PC › Schreibrechte.", "No write access to the game folder – Settings › This PC › Write access."), ToastKind.Error); }
+            catch (Exception ex) { Toast(ex.Message, ToastKind.Error); }
+            LoadBotRadio();
         }
 
         void UpdateAiInfo()

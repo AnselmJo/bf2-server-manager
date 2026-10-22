@@ -53,9 +53,12 @@ namespace BF2Coop
 
             _bRun = new FlatButton(T("Ausführen", "Run"), G.Play, BtnKind.Primary);
             _bFill = new FlatButton(T("In Konsole übernehmen", "Put into console"), G.Console, BtnKind.Secondary);
-            FlatButton bClose = new FlatButton(T("Schließen", "Close"), null, BtnKind.Ghost);
+            // Schließen oben rechts wie bei einem normalen Fenster
+            FlatButton bClose = new FlatButton(null, G.Close, BtnKind.Ghost);
+            bClose.TabStop = false; bClose.Location = new Point(w - Dpi.D(12) - bClose.Width, Dpi.D(12));
+            Theme.Tip.SetToolTip(bClose, T("Schließen (Esc)", "Close (Esc)"));
             int bx = w - pad;
-            foreach (FlatButton b in new FlatButton[] { _bRun, _bFill, bClose }) { bx -= b.Width; b.Location = new Point(bx, h - pad - b.Height); bx -= Dpi.D(10); }
+            foreach (FlatButton b in new FlatButton[] { _bRun, _bFill }) { bx -= b.Width; b.Location = new Point(bx, h - pad - b.Height); bx -= Dpi.D(10); }
             _bRun.Click += delegate { Finish(2); };
             _bFill.Click += delegate { Finish(1); };
             bClose.Click += delegate { Result = -1; Close(); };

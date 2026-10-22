@@ -38,6 +38,8 @@ namespace BF2Coop.Tests
             Run("lan", LanTests);
             Run("leaderboard", Board);
             Run("profiles", ProfileFiles);
+            Run("profilemanage", ProfileManage);
+            Run("radio", Radio);
             Run("moddesc", ModDesc);
             Run("commands", Cmds);
             Run("scrub", Scrub);
@@ -182,6 +184,50 @@ namespace BF2Coop.Tests
             Check(Profiles.Get(f, "VideoSettings", "setTerrainQuality") == "2", "profile value added");
             Check(Profiles.Get(f, "VideoSettings", "setViewDistanceScale") == "0.75", "other values kept");
             Check(Profiles.CleanName(" Ansi der Große ") == "Ansi_der_Groe", "player name cleaned");
+        }
+
+        static void ProfileManage()
+        {
+            string root = Path.Combine(_tmp, "Profiles"), docs = Path.Combine(_tmp, "docs");
+            Directory.CreateDirectory(Path.Combine(root, "Default"));
+            File.WriteAllText(Path.Combine(root, "Default", "Video.con"), "VideoSettings.setResolution 800x600@60Hz\r\n");
+            File.WriteAllText(Path.Combine(root, "Default", "Profile.con"), "LocalProfile.setName \"Default\"\r\n");
+            Profiles.RootOverride = root;
+            try
+            {
+                Check(Profiles.All().Count == 0 && Profiles.Default() == null, "template folder Default is not a profile");
+                Bf2Profile a = Profiles.Create("Ansi", docs);
+                Check(a != null && a.Id == "0001" && a.Nick == "Ansi" && a.Name == "Ansi", "profile created as 0001");
+                Check(Profiles.DefaultId() == "0001", "new profile becomes default (Global.con created)");
+                Check(File.Exists(Path.Combine(a.Dir, "Video.con")), "template files copied");
+                Check(Profiles.NameProblem("ansi", null) != null, "duplicate name rejected");
+                Check(Profiles.NameProblem("ansi", a) == null, "own name allowed for the same profile");
+                Check(Profiles.NameProblem("defaultPlayer", null) != null && Profiles.NameProblem("ab", null) != null, "placeholder and short names rejected");
+                Bf2Profile b = Profiles.Create("Zweiter", docs);
+                Check(b.Id == "0002" && Profiles.DefaultId() == "0002", "second profile 0002");
+                Profiles.Rename(a, "Anselm", docs);
+                Bf2Profile a2 = null; foreach (Bf2Profile p in Profiles.All()) if (p.Id == "0001") a2 = p;
+                Check(a2 != null && a2.Name == "Anselm" && a2.Nick == "Anselm", "rename sets account and nick");
+                File.WriteAllText(Path.Combine(a2.Dir, "General.con"), "broken");
+                Bf2Profile r = Profiles.Repair(a2, "Anselm", docs);
+                Check(r.Id == "0001" && r.Nick == "Anselm" && !File.Exists(Path.Combine(r.Dir, "General.con")) && Profiles.DefaultId() == "0001", "repair keeps id and name, fresh files");
+                Check(Directory.Exists(Path.Combine(docs, "BF2_Backups")), "repair creates a backup");
+                Profiles.Delete(r, docs);
+                Check(!Directory.Exists(r.Dir) && Profiles.DefaultId() == "0002", "delete moves default to the remaining profile");
+            }
+            finally { Profiles.RootOverride = null; }
+        }
+
+        static void Radio()
+        {
+            string f = Path.Combine(_tmp, "AIRadioMessages.ai"), docs = Path.Combine(_tmp, "docs");
+            File.WriteAllText(f, "rem voice name\r\naiComm.addAIRadioMessage \"medic\" 10 20 20\r\naiComm.addAIRadioMessage \"defend\" 10 10 1\r\n");
+            Check(BotRadio.State(f) == true, "bot radio on initially");
+            BotRadio.Set(f, false, docs);
+            Check(BotRadio.State(f) == false && File.ReadAllText(f).StartsWith("rem voice name"), "bot radio off, other lines kept");
+            BotRadio.Set(f, true, docs);
+            Check(BotRadio.State(f) == true && File.ReadAllText(f).Contains("\r\naiComm.addAIRadioMessage \"medic\" 10 20 20"), "bot radio on again, line restored");
+            Check(BotRadio.State(Path.Combine(_tmp, "missing.ai")) == null, "missing radio file");
         }
 
         static void ModDesc()

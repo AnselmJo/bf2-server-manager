@@ -236,6 +236,7 @@ namespace BF2Coop
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
             Dock = DockStyle.Top; Height = Dpi.D(62); BackColor = Theme.Bg; Visible = false;
         }
+        public Color Surface { get { return Theme.Mix(Theme.Card, Tint, 0.10f); } }
         public void AddRight(Control c) { RightItems.Add(c); Controls.Add(c); }
         protected override void OnLayout(LayoutEventArgs e)
         {
@@ -247,7 +248,7 @@ namespace BF2Coop
         {
             Graphics g = e.Graphics; g.Clear(BackColor); Theme.Hq(g);
             RectangleF r = new RectangleF(Dpi.D(24), Dpi.D(4), Width - Dpi.D(48), Height - Dpi.D(12));
-            Theme.Fill(g, r, Dpi.D(9), Theme.Mix(Theme.Card, Tint, 0.10f));
+            Theme.Fill(g, r, Dpi.D(9), Surface);
             Theme.Stroke(g, r, Dpi.D(9), Theme.A(Tint, 110), 1);
             int x = Dpi.D(40);
             if (Theme.Icon != null) { Theme.Glyph(g, Glyph, Theme.Icon, new Rectangle(x, (int)r.Y, Dpi.D(20), (int)r.Height), Tint); x += Dpi.D(30); }

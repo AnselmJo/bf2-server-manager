@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.2.2]
+
+Easier start for new players, profiles in the manager, bot radio switch.
+
+### New
+- **Welcome window on first start:** game folder (auto-detected, otherwise *Choose folder*) and player name in one step. If there is no BF2 profile yet, the manager creates it. Can be run again from the *Profile* menu.
+- **"Your player" card on Play:** name, **Change name** (applies right away – no waiting, no restart), profile switcher, and the *Profile* menu with **New profile**, **Repair profile** (fresh files, same name – the fix for BF2 hanging at start or when joining), **Delete profile** and *Open profile folder*. Every change is backed up to `Documents\BF2_Backups`.
+- **"Game stuck? Close it"** while BF2 runs, with tips (repair profile, ReShade off, windowed mode, check the server).
+- **Game folder:** *Choose folder* directly on Play when BF2 is not found (also accepts the parent folder), *Settings › Folders › Change game folder* for later changes.
+- **Bot radio messages on/off** (*Bots › Radio*): silences "Medic!", "Roger that" etc. by switching the mod's `ai\AIRadioMessages.ai` (backup created, applies at the next server start).
+- **ReShade (optional) with setup guide:** what it does, how to install it from reshade.me for BF2 (Direct3D 9), freeze warning. The on/off switch appears once ReShade is installed.
+
+### Changed
+- The green "This PC is ready" bar is gone; the player card shows a small *✓ This PC is ready*. The yellow bar with **Fix** only appears when something needs attention.
+- *Settings › Profile* is now *Game start* (windowed, skip intro, log in automatically); name and profile live on the Play page.
+- "Log in automatically" passes the profile's account name, so login and profile always match.
+- Bot module versions are only shown on the server PC (Host).
+- Console commands window: close with **✕** at the top right (or Esc).
+
+### Fixed
+- *Settings › This PC* could not be expanded when everything was fine.
+- *Fix* for the player name jumped to a page without a name field; it now asks for the name directly or creates the profile.
+- Buttons in the status bar were square at rest and rounded on hover.
+- No profile or only BF2's *Default* template: the name could not be set.
+
 ## [1.2.1]
 
 First public release as **BF2 Manager** (previously BF2 Server Manager).

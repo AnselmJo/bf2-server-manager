@@ -27,15 +27,15 @@ using Timer = System.Windows.Forms.Timer;
 [assembly: AssemblyTitle("BF2 Manager")]
 [assembly: AssemblyProduct("BF2 Manager")]
 [assembly: AssemblyDescription("Launcher and server manager for Battlefield 2 LAN parties with bots")]
-[assembly: AssemblyVersion("1.2.1.0")]
-[assembly: AssemblyFileVersion("1.2.1.0")]
+[assembly: AssemblyVersion("1.2.2.0")]
+[assembly: AssemblyFileVersion("1.2.2.0")]
 
 namespace BF2Coop
 {
     public static class AppInfo
     {
         public const string Name = "BF2 Manager";
-        public const string Version = "1.2.1";
+        public const string Version = "1.2.2";
         public const int ModuleVersion = 4;
         public const string Repo = "AnselmJo/bf2-manager";
         public const string RepoUrl = "https://github.com/" + Repo;
@@ -191,7 +191,8 @@ namespace BF2Coop
 
     public static class Profiles
     {
-        public static string Root { get { return Path.Combine(AppPaths.Docs, "Battlefield 2", "Profiles"); } }
+        public static string RootOverride; // nur für Tests
+        public static string Root { get { return RootOverride ?? Path.Combine(AppPaths.Docs, "Battlefield 2", "Profiles"); } }
         static readonly Regex RxSet = new Regex(@"^\s*(\w+)\.(\w+)\s+(.*?)\s*$");
 
         public static List<Bf2Profile> All()
@@ -258,9 +259,112 @@ namespace BF2Coop
         public static void SetDefault(string id)
         {
             string g = Path.Combine(Root, "Global.con");
-            if (!File.Exists(g)) return;
+            if (!File.Exists(g) && !Directory.Exists(Root)) return;
             Dictionary<string, string> v = new Dictionary<string, string>(); v["setDefaultUser"] = "\"" + id + "\"";
+            if (!File.Exists(g)) v["setNamePrefix"] = "\"\"";
             Set(g, "GlobalSettings", v);
+        }
+
+        // Platzhalter, die BF2 oder Vorlagen anlegen – so soll niemand im Spiel heißen
+        public static bool IsPlaceholder(string nick)
+        {
+            return string.IsNullOrEmpty(nick) || nick.Equals("defaultPlayer", StringComparison.OrdinalIgnoreCase) || nick.Equals("Default", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Fehlertext für einen (bereits bereinigten) Namen oder null, wenn er passt
+        public static string NameProblem(string name, Bf2Profile self)
+        {
+            if (string.IsNullOrEmpty(name)) return I18n.T("Bitte einen Namen eingeben.", "Please enter a name.");
+            if (name.Length < 3) return I18n.T("Der Name braucht mindestens 3 Zeichen.", "The name needs at least 3 characters.");
+            if (IsPlaceholder(name)) return I18n.T("Bitte einen eigenen Namen wählen.", "Please choose your own name.");
+            foreach (Bf2Profile p in All())
+                if ((self == null || p.Id != self.Id) && (name.Equals(p.Nick, StringComparison.OrdinalIgnoreCase) || name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)))
+                    return I18n.T("Ein anderes Profil heißt schon so.", "Another profile already has this name.");
+            return null;
+        }
+
+        static string NextId()
+        {
+            for (int i = 1; i < 10000; i++)
+            {
+                string id = i.ToString("0000");
+                if (!Directory.Exists(Path.Combine(Root, id))) return id;
+            }
+            throw new IOException(I18n.T("Kein freier Profilplatz.", "No free profile slot."));
+        }
+
+        // Profile.con so, wie BF2 sie für ein Offline-Konto anlegt
+        static void WriteProfileCon(string dir, string name)
+        {
+            string q = "\"" + name + "\"";
+            string text = "LocalProfile.setName " + q + "\r\nLocalProfile.setNick " + q + "\r\nLocalProfile.setGamespyNick \"\"\r\nLocalProfile.setTotalPlayedTime 0\r\nLocalProfile.setNumTimesLoggedIn 0\r\n";
+            Util.WriteAtomic(Path.Combine(dir, "Profile.con"), text, Util.Ansi);
+        }
+
+        // Neuen Profilordner füllen: Grafik/Audio aus der BF2-Vorlage „Default“, den Rest ergänzt BF2 beim ersten Start
+        static void Fill(string dir, string name)
+        {
+            Directory.CreateDirectory(dir);
+            string tpl = Path.Combine(Root, "Default");
+            if (Directory.Exists(tpl))
+                foreach (string f in Directory.GetFiles(tpl, "*.con"))
+                    if (!Path.GetFileName(f).Equals("Profile.con", StringComparison.OrdinalIgnoreCase)) File.Copy(f, Path.Combine(dir, Path.GetFileName(f)), true);
+            WriteProfileCon(dir, name);
+        }
+
+        static Bf2Profile Load(string id)
+        {
+            foreach (Bf2Profile p in All()) if (p.Id == id) return p;
+            return null;
+        }
+
+        static void BackupDir(string dir, string docsDir)
+        {
+            if (Directory.Exists(dir)) Util.Backup(Directory.GetFiles(dir), docsDir);
+        }
+
+        // Legt ein neues Offline-Profil an und macht es zum Standard
+        public static Bf2Profile Create(string name, string docsDir)
+        {
+            Directory.CreateDirectory(Root);
+            string id = NextId();
+            Fill(Path.Combine(Root, id), name);
+            SetDefault(id);
+            return Load(id);
+        }
+
+        // Benennt ein Offline-Profil um: Konto- und Spielername gemeinsam, damit Auto-Login und Spiel zusammenpassen
+        public static void Rename(Bf2Profile p, string name, string docsDir)
+        {
+            string pc = Path.Combine(p.Dir, "Profile.con");
+            Util.Backup(new string[] { pc }, docsDir);
+            Dictionary<string, string> v = new Dictionary<string, string>();
+            v["setName"] = "\"" + name + "\""; v["setNick"] = "\"" + name + "\"";
+            Set(pc, "LocalProfile", v);
+            p.Name = p.Nick = name;
+        }
+
+        // Setzt ein Profil komplett zurück (gleiche Nummer, frische Dateien) – hilft, wenn BF2 damit hängt
+        public static Bf2Profile Repair(Bf2Profile p, string name, string docsDir)
+        {
+            BackupDir(p.Dir, docsDir);
+            foreach (string f in Directory.GetFiles(p.Dir)) File.Delete(f);
+            foreach (string d in Directory.GetDirectories(p.Dir)) Directory.Delete(d, true);
+            Fill(p.Dir, name);
+            SetDefault(p.Id);
+            return Load(p.Id);
+        }
+
+        // Löscht ein Profil (vorher gesichert); war es der Standard, wird das nächste Profil Standard
+        public static void Delete(Bf2Profile p, string docsDir)
+        {
+            BackupDir(p.Dir, docsDir);
+            Directory.Delete(p.Dir, true);
+            if (DefaultId() == p.Id)
+            {
+                List<Bf2Profile> rest = All();
+                if (rest.Count > 0) SetDefault(rest[0].Id);
+            }
         }
 
         public static string CleanName(string n)
