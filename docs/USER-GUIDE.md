@@ -10,7 +10,7 @@ A welcome window asks for two things: the **game folder** (found automatically; 
 
 **Your player** – your name, **Change name** (applies right away), profile switcher when you have several, and the *Profile* menu: **New profile**, **Repair profile** (fresh files, same name – helps when BF2 hangs at start or when joining), **Delete profile**, open the profile folder. Every change is backed up to `Documents\BF2_Backups`. While BF2 runs, the card offers **Game stuck? Close it** with tips.
 
-**Play** – the main view. Running servers on the network appear automatically with map, size, mode, players, bots and mod.
+**Play** – the main view. Running servers on the network appear automatically with map, size, mode, players, bots and mod. The list updates itself every few seconds; **Refresh** clears it and searches right away. A server running on this PC is always listed and marked *this PC*.
 - **✓ Compatible** → click **Join**. The game starts in the server's mod, logs in and joins.
 - **⚠ Mod missing / different version** → **Get files from server** compares your mod with the server PC and copies only what differs (each file is verified).
 - **Manager x.y – update** appears when the server PC has a newer manager.
@@ -26,7 +26,7 @@ A welcome window asks for two things: the **game folder** (found automatically; 
 On the first switch to *Host* you set up the server once (pick mods, one Windows prompt). The top bar shows mod, mode, server status, **Join** (your own server) and **Start/Stop server**.
 
 **Server** – while the server is stopped: build the rotation.
-- Double-click a map on the left (filter by size) to add it. Drag the **≡** handle to sort, **right-click** for more (custom bot values, duplicate, remove), shuffle, **Undo**.
+- Double-click a map on the left (filter by size) to add it. Drag the **≡** handle to sort, **right-click** for more (custom bot values, duplicate, remove). The icons below the rotation: up, down, remove, shuffle, undo, clear (hover for a tooltip).
 - Select a map to see its preview and its **bot values**. *Custom values* gives this map its own bots (★).
 - **Recent & presets**: reload a configuration you started before, or save/load named presets.
 

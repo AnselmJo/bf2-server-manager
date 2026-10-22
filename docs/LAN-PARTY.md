@@ -11,7 +11,7 @@ Battlefield 2\                  ← your game folder, e.g. copied to C:\Games\Ba
   BF2.exe
   bf2_w32ded.exe
   mods\                         ← all mods you want to play (bf2all64, xpack, …)
-  BF2Manager.exe          ← put the manager here
+  BF2Manager.exe          ← put the manager here (download: github.com/AnselmJo/bf2-manager/releases/latest/download/BF2Manager.exe)
   _LAN\
     DirectX\                    ← optional but recommended (see below)
     ReShade\                    ← optional

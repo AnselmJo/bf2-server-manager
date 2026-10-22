@@ -48,7 +48,8 @@ namespace BF2Coop
             if (!GameLocator.IsGameDir(gameDir)) { g.Status = CheckStatus.Error; g.Detail = T("Nicht gefunden. Den Ordner wählen, in dem BF2.exe liegt.", "Not found. Choose the folder that contains BF2.exe."); g.FixLabel = T("Ordner wählen", "Choose folder"); return r; }
             string exe = Path.Combine(gameDir, "BF2.exe"), ded = Path.Combine(gameDir, "bf2_w32ded.exe");
             g.Status = CheckStatus.Ok;
-            g.Detail = gameDir + "  ·  BF2 " + (GameLocator.FileVersion(exe) ?? "?") + (GameLocator.Portable() != null ? T("  ·  LAN-Ordner", "  ·  LAN folder") : "");
+            string ver = GameLocator.FileVersion(exe);
+            g.Detail = gameDir + (ver != null && ver != "?" ? "  ·  BF2 " + ver : "") + (GameLocator.IsBf2Hub(gameDir) ? "  ·  BF2Hub" : "") + (GameLocator.Portable() != null ? T("  ·  LAN-Ordner", "  ·  LAN folder") : "");
 
             CheckItem w = New(r, "write", T("Schreibrechte", "Write access"));
             bool canWrite = Installer.CanWrite(Path.Combine(gameDir, "mods"));

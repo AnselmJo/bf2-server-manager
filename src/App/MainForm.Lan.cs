@@ -39,23 +39,60 @@ namespace BF2Coop
         }
 
         // Alle 2 s aus RefreshLive: Bekanntmachung senden und Serverliste aktualisieren
-        void LanTick(Dictionary<string, string> live)
+        string InstanceId
         {
-            if (_lanFiles != null && _lanFiles.Error == null && (DateTime.Now - _lastBeacon).TotalSeconds >= 3)
+            get
             {
-                _lastBeacon = DateTime.Now;
-                string map, hu, hm; live.TryGetValue("map", out map);
-                int humans = live.TryGetValue("humansUS", out hu) && live.TryGetValue("humansMEC", out hm) ? Util.ToInt(hu, 0) + Util.ToInt(hm, 0) : 0;
-                string bu, bm; int bots = live.TryGetValue("botsUS", out bu) && live.TryGetValue("botsMEC", out bm) ? Util.ToInt(bu, 0) + Util.ToInt(bm, 0) : 0;
-                int size = 0; foreach (MapEntry me in _st.Maps) if (string.Equals(me.Name, map, StringComparison.OrdinalIgnoreCase)) { size = me.Size; break; }
                 string id = _cfg.S("InstanceId", null);
                 if (id == null) { id = Guid.NewGuid().ToString("N").Substring(0, 12); _cfg.Set("InstanceId", id); _cfg.Save(); }
-                string payload = Lan.Payload(_vals.ContainsKey("sv.serverName") ? _vals["sv.serverName"] : "BF2", Util.ToInt(_vals["sv.serverPort"], 16567),
-                    _mod.Length > 0 ? _mod : PlayMod, map ?? "", humans, Util.ToInt(_vals["sv.maxPlayers"], 64), _coop ? "coop" : "cq", _running)
-                    + "|" + id + "|" + size + "|" + bots + "|" + Lan.Esc(ModInfo.Read(GameDir, _mod).Version ?? "");
-                ThreadPool.QueueUserWorkItem(delegate { try { Lan.Announce(payload); } catch { } });
+                return id;
             }
+        }
+
+        Dictionary<string, string> _lastLive = new Dictionary<string, string>();
+
+        // Der eigene Server, wie ihn andere PCs über die Bekanntmachung sehen
+        LanHost OwnHost(Dictionary<string, string> live)
+        {
+            string map, hu, hm, bu, bm; live.TryGetValue("map", out map);
+            LanHost h = new LanHost();
+            h.Name = _vals.ContainsKey("sv.serverName") ? _vals["sv.serverName"] : "BF2";
+            h.GamePort = Util.ToInt(_vals["sv.serverPort"], 16567); h.Mod = _mod.Length > 0 ? _mod : PlayMod; h.Map = map ?? "";
+            h.Humans = live.TryGetValue("humansUS", out hu) && live.TryGetValue("humansMEC", out hm) ? Util.ToInt(hu, 0) + Util.ToInt(hm, 0) : 0;
+            h.Bots = live.TryGetValue("botsUS", out bu) && live.TryGetValue("botsMEC", out bm) ? Util.ToInt(bu, 0) + Util.ToInt(bm, 0) : 0;
+            h.Max = Util.ToInt(_vals["sv.maxPlayers"], 64); h.Mode = _coop ? "coop" : "cq"; h.Running = _running;
+            foreach (MapEntry me in _st.Maps) if (string.Equals(me.Name, h.Map, StringComparison.OrdinalIgnoreCase)) { h.Size = me.Size; break; }
+            h.Id = InstanceId; h.HttpPort = Lan.HttpPort; h.Version = AppInfo.Version; h.ModVersion = ModInfo.Read(GameDir, h.Mod).Version ?? "";
+            List<string> ips = Srv.LanAddresses(); h.Ip = ips.Count > 0 ? ips[0] : "127.0.0.1"; h.Self = true; h.Seen = DateTime.Now;
+            return h;
+        }
+
+        // Alle 2 s aus RefreshLive: Bekanntmachung senden und Serverliste aktualisieren
+        void LanTick(Dictionary<string, string> live)
+        {
+            _lastLive = live;
+            if (_lanFiles != null && _lanFiles.Error == null && (DateTime.Now - _lastBeacon).TotalSeconds >= 3) SendBeacon(live);
             if (_page == PgPlayer && !_syncBusy) RefreshServers(false);
+        }
+
+        void SendBeacon(Dictionary<string, string> live)
+        {
+            _lastBeacon = DateTime.Now;
+            LanHost h = OwnHost(live);
+            string payload = Lan.Payload(h.Name, h.GamePort, h.Mod, h.Map, h.Humans, h.Max, h.Mode, h.Running)
+                + "|" + h.Id + "|" + h.Size + "|" + h.Bots + "|" + Lan.Esc(h.ModVersion);
+            ThreadPool.QueueUserWorkItem(delegate { try { Lan.Announce(payload); } catch { } });
+        }
+
+        // „Aktualisieren“: Liste leeren, sofort neu bekanntmachen; Antworten kommen innerhalb weniger Sekunden
+        void RescanServers()
+        {
+            if (_lanListen != null) _lanListen.Clear();
+            if (_lanFiles != null && _lanFiles.Error == null) SendBeacon(_lastLive);
+            RefreshServers(true);
+            Toast(_lanListen != null && _lanListen.Error != null
+                ? T("Serversuche nicht möglich: ", "Server search not possible: ") + _lanListen.Error
+                : T("Suche läuft – laufende Server erscheinen in wenigen Sekunden.", "Searching – running servers appear within a few seconds."), ToastKind.Info);
         }
 
         void SetSync(string text) { _syncText.Text = text; if (_page == PgPlayer) _plHost.Masonry(_plCards, 2); }

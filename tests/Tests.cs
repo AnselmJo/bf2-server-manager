@@ -236,6 +236,10 @@ namespace BF2Coop.Tests
             File.WriteAllText(Path.Combine(md, "mod.desc"), "<?xml version=\"1.0\"?>\n<mod>\n <title>Test Mod</title>\n <version>2.5</version>\n</mod>\n");
             ModInfo mi = ModInfo.Read(g, "testmod");
             Check(mi.Title == "Test Mod" && mi.Version == "2.5", "mod.desc title and version");
+            string xp = Path.Combine(g, "mods", "xpack"); Directory.CreateDirectory(xp);
+            File.WriteAllText(Path.Combine(xp, "mod.desc"), "<mod><title>MODDESC_XP_TITLE</title><version>1.5</version></mod>");
+            Check(ModInfo.Read(g, "xpack").Title == "xpack", "mod.desc translation key falls back to folder name");
+            Check(GameLocator.VersionText(Path.Combine(g, "missing.exe")) == "missing", "version text for a missing exe");
         }
 
         static void Cmds()

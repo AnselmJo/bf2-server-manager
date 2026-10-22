@@ -27,15 +27,15 @@ using Timer = System.Windows.Forms.Timer;
 [assembly: AssemblyTitle("BF2 Manager")]
 [assembly: AssemblyProduct("BF2 Manager")]
 [assembly: AssemblyDescription("Launcher and server manager for Battlefield 2 LAN parties with bots")]
-[assembly: AssemblyVersion("1.2.2.0")]
-[assembly: AssemblyFileVersion("1.2.2.0")]
+[assembly: AssemblyVersion("1.2.3.0")]
+[assembly: AssemblyFileVersion("1.2.3.0")]
 
 namespace BF2Coop
 {
     public static class AppInfo
     {
         public const string Name = "BF2 Manager";
-        public const string Version = "1.2.2";
+        public const string Version = "1.2.3";
         public const int ModuleVersion = 4;
         public const string Repo = "AnselmJo/bf2-manager";
         public const string RepoUrl = "https://github.com/" + Repo;
@@ -139,6 +139,16 @@ namespace BF2Coop
             return r;
         }
 
+        // Für die Anzeige: Versionsnummer, sonst „vorhanden“ (gepatchte BF2-Exes haben oft keine Versionsinfo) bzw. „fehlt“
+        public static string VersionText(string exe)
+        {
+            string v = FileVersion(exe);
+            if (v == null) return I18n.T("fehlt", "missing");
+            return v == "?" ? I18n.T("vorhanden", "present") : v;
+        }
+
+        public static bool IsBf2Hub(string gameDir) { return !string.IsNullOrEmpty(gameDir) && File.Exists(Path.Combine(gameDir, "bf2hub.dll")); }
+
         public static string FileVersion(string exe)
         {
             try
@@ -165,6 +175,8 @@ namespace BF2Coop
                 if (!File.Exists(p)) return m;
                 string t = File.ReadAllText(p);
                 m.Title = Tag(t, "title") ?? mod;
+                // Manche Mods tragen nur einen Übersetzungsschlüssel ein (z. B. MODDESC_XP_TITLE) – dann den Ordnernamen zeigen
+                if (Regex.IsMatch(m.Title, @"^[A-Z0-9_]+$") && m.Title.IndexOf('_') >= 0) m.Title = mod;
                 m.Version = Tag(t, "version");
                 m.Description = Tag(t, "description");
             }

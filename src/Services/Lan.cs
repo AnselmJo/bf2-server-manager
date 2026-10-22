@@ -290,6 +290,8 @@ namespace BF2Coop
             return r;
         }
 
+        public void Clear() { lock (_hosts) _hosts.Clear(); }
+
         public void Dispose() { _stop = true; try { if (_udp != null) _udp.Close(); } catch { } }
     }
 

@@ -97,7 +97,11 @@ namespace BF2Coop
             _bSyncCancel.Click += delegate { _syncCancel = true; };
             _syncButtons = Buttons(_bSyncGo, _bSyncCancel);
             foreach (Control c in new Control[] { _lanEmpty, emptyRow, _syncText, _syncButtons }) _cLan.Controls.Add(c);
-            _cLan.Layouter = Stack(_cLan, delegate
+            FlatButton bScan = new FlatButton(T("Aktualisieren", "Refresh"), G.Refresh, BtnKind.Ghost); bScan.Height = Dpi.D(30); bScan.Fit();
+            Theme.Tip.SetToolTip(bScan, T("Serverliste aktualisieren\nDie Liste aktualisiert sich ohnehin alle paar Sekunden von selbst. Der Knopf leert sie und sucht sofort neu.", "Refresh server list\nThe list updates itself every few seconds anyway. This button clears it and searches right away."));
+            bScan.Click += delegate { RescanServers(); };
+            _cLan.Controls.Add(bScan); _cLan.HeaderControls.Add(bScan);
+            Func<int, int> lanStack = Stack(_cLan, delegate
             {
                 List<Control> l = new List<Control>();
                 if (_lanRows.Count == 0) { l.Add(_lanEmpty); l.Add(emptyRow); }
@@ -109,6 +113,12 @@ namespace BF2Coop
                 if (showGo || _syncBusy) l.Add(_syncButtons);
                 return l;
             });
+            _cLan.Layouter = delegate (int w)
+            {
+                bScan.Location = new Point(w - Dpi.D(16) - bScan.Width, Dpi.D(9));
+                _cLan.HeaderReserve = bScan.Width + Dpi.D(8);
+                return lanStack(w);
+            };
 
             // ---- Grafik
             _cGfx = new Card(T("Grafik", "Graphics"), G.Video);
@@ -351,6 +361,13 @@ namespace BF2Coop
             List<LanHost> all = _fakeHosts ?? (_lanListen != null ? _lanListen.Hosts() : new List<LanHost>());
             List<LanHost> hosts = new List<LanHost>();
             foreach (LanHost h in all) if (h.Running) hosts.Add(h);
+            // Eigener Server immer anzeigen – auch wenn die eigene Bekanntmachung nicht zurückkommt (Firewall, VPN-Adapter)
+            if (_fakeHosts == null && _running)
+            {
+                string id = InstanceId; bool have = false;
+                foreach (LanHost h in hosts) if (h.Id == id) { h.Self = true; have = true; }
+                if (!have) hosts.Insert(0, OwnHost(_lastLive));
+            }
             StringBuilder sig = new StringBuilder();
             foreach (LanHost h in hosts) sig.Append(h.Key).Append(h.Map).Append(h.Humans).Append(h.Bots).Append(h.Mod).Append(h.ModVersion).Append(h.Version).Append(';');
             if (!force && sig.ToString() == _lanSig) return;
@@ -361,7 +378,7 @@ namespace BF2Coop
             {
                 LanHost host = h;
                 bool ok; string compat = Compat(host, out ok);
-                Para head = new Para(host.Name); head.Font = Theme.Head; head.Color = Theme.Text;
+                Para head = new Para(host.Name + (host.Self ? T("  ·  dieser PC", "  ·  this PC") : "")); head.Font = Theme.Head; head.Color = Theme.Text;
                 string size = host.Size > 0 ? "  ·  " + host.Size + T("er Map", "-player map") : "";
                 string mode = host.Mode == "coop" ? "Coop" : (host.Mode == "cq" ? "Conquest" : host.Mode);
                 Para info = new Para(Util.Pretty(host.Map) + size + "  ·  " + mode + "\n" +
@@ -388,7 +405,7 @@ namespace BF2Coop
                 }
                 foreach (Control c in new Control[] { head, info, st, btns }) { _lanRows.Add(c); _cLan.Controls.Add(c); }
             }
-            _cLan.SetNote(hosts.Count == 0 ? "" : (hosts.Count == 1 ? T("1 Server", "1 server") : hosts.Count + T(" Server", " servers")));
+            _cLan.SetNote(hosts.Count == 0 ? T("sucht laufend …", "searching …") : (hosts.Count == 1 ? T("1 Server", "1 server") : hosts.Count + T(" Server", " servers")));
             if (_page == PgPlayer) _plHost.Masonry(_plCards, 1);
         }
     }

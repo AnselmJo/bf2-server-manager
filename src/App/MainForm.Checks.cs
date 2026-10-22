@@ -118,8 +118,10 @@ namespace BF2Coop
             sb.Append('\n');
             if (GameLocator.IsGameDir(GameDir))
             {
-                sb.Append("BF2.exe ").Append(GameLocator.FileVersion(Path.Combine(GameDir, "BF2.exe")) ?? "–");
-                sb.Append("  ·  Server ").Append(GameLocator.FileVersion(Path.Combine(GameDir, "bf2_w32ded.exe")) ?? "–").Append('\n');
+                sb.Append("BF2.exe ").Append(GameLocator.VersionText(Path.Combine(GameDir, "BF2.exe")));
+                sb.Append("  ·  Server ").Append(GameLocator.VersionText(Path.Combine(GameDir, "bf2_w32ded.exe")));
+                if (GameLocator.IsBf2Hub(GameDir)) sb.Append("  ·  BF2Hub");
+                sb.Append('\n');
                 foreach (string m in GameLocator.AllMods(GameDir))
                 {
                     ModInfo mi = ModInfo.Read(GameDir, m);

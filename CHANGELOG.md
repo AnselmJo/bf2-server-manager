@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.3]
+
+Bug fixes and an easier download.
+
+### Fixed
+- **Advanced server settings:** switching *Advanced* on or off showed "Unexpected error: object reference not set" and the advanced cards never appeared.
+- **Own server missing on Play:** a server running on this PC is now always listed (marked *this PC*), even if the PC does not receive its own network announcement (firewall, VPN adapters).
+- **Rotation toolbar:** *Undo* overlapped *Shuffle* / *Clear*. All rotation actions are now compact icons with tooltips (up, down, remove, shuffle, undo, clear).
+- **Mods / Versions:** "BF2.exe ?" and "Server ?" – patched game files carry no version info; the manager now shows *present* / *missing* and detects BF2Hub. Mods whose `mod.desc` only contains a translation key (e.g. `MODDESC_XP_TITLE`) show the folder name instead.
+
+### New
+- **Refresh** button on *Servers on the network*. The list still updates by itself every few seconds; the note *searching …* shows that it is looking.
+- **Direct download link** for the latest `BF2Manager.exe` at the top of the README and in every release description.
+
 ## [1.2.2]
 
 Easier start for new players, profiles in the manager, bot radio switch.

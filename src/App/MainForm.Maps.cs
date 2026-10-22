@@ -59,7 +59,8 @@ namespace BF2Coop
             _cAvail.Controls.Add(_sizeFilter);
             _bShuffle = new FlatButton(null, G.Sync, BtnKind.Ghost); Theme.Tip.SetToolTip(_bShuffle, T("Reihenfolge mischen", "Shuffle order"));
             _bShuffle.Click += delegate { if (_st.Maps.Count < 2) return; PushUndo(); Random rnd = new Random(); for (int i = _st.Maps.Count - 1; i > 0; i--) { int j = rnd.Next(i + 1); MapEntry t = _st.Maps[i]; _st.Maps[i] = _st.Maps[j]; _st.Maps[j] = t; } RefreshRot(0); MarkDirty(); };
-            _bUndo = new FlatButton(T("Rückgängig", "Undo"), G.Undo, BtnKind.Secondary); _bUndo.Visible = false;
+            _bUndo = new FlatButton(null, G.Undo, BtnKind.Secondary); _bUndo.Visible = false;
+            Theme.Tip.SetToolTip(_bUndo, T("Rückgängig\nMacht die letzte Änderung an der Rotation rückgängig.", "Undo\nReverts the last change to the rotation."));
             _bUndo.Click += delegate { Undo(); };
             _rotMenu = Theme.Menu();
             _rotMenu.Opening += delegate { BuildRotMenu(); };
@@ -69,8 +70,10 @@ namespace BF2Coop
             _lbRot.KeyDown += delegate (object s, KeyEventArgs e) { if (e.KeyCode == Keys.Delete) { RemoveRot(); e.Handled = true; } };
             _bUp = new FlatButton(null, G.Up, BtnKind.Ghost); Theme.Tip.SetToolTip(_bUp, T("Nach oben", "Move up"));
             _bDown = new FlatButton(null, G.Down, BtnKind.Ghost); Theme.Tip.SetToolTip(_bDown, T("Nach unten", "Move down"));
-            _bDel = new FlatButton(null, G.Delete, BtnKind.Ghost); Theme.Tip.SetToolTip(_bDel, T("Entfernen (Entf)", "Remove (Del)"));
-            _bClear = new FlatButton(T("Leeren", "Clear"), null, BtnKind.Ghost); Theme.Tip.SetToolTip(_bClear, T("Rotation komplett leeren", "Clear the whole rotation"));
+            _bDel = new FlatButton(null, G.Remove, BtnKind.Ghost); Theme.Tip.SetToolTip(_bDel, T("Entfernen (Entf)", "Remove (Del)"));
+            _bClear = new FlatButton(null, G.Delete, BtnKind.Ghost); Theme.Tip.SetToolTip(_bClear, T("Leeren\nEntfernt alle Maps aus der Rotation. Rückgängig holt sie zurück.", "Clear\nRemoves all maps from the rotation. Undo brings them back."));
+            // Kompakte Symbolleiste, damit alles auch in schmalen Fenstern in eine Zeile passt
+            foreach (FlatButton b in new FlatButton[] { _bUp, _bDown, _bDel, _bShuffle, _bUndo, _bClear }) { b.Height = Dpi.D(30); b.Fit(); }
             _bUp.Click += delegate { MoveRot(-1); };
             _bDown.Click += delegate { MoveRot(1); };
             _bDel.Click += delegate { RemoveRot(); };
@@ -78,7 +81,7 @@ namespace BF2Coop
             {
                 if (_st.Maps.Count == 0) return;
                 PushUndo(); _st.Maps.Clear(); RefreshRot(-1); RefreshAvail(); MarkDirty();
-                Toast(T("Rotation geleert – „Rückgängig“ holt sie zurück.", "Rotation cleared – “Undo” brings it back."), ToastKind.Info);
+                Toast(T("Rotation geleert – der Rückgängig-Knopf holt sie zurück.", "Rotation cleared – the undo button brings it back."), ToastKind.Info);
             };
             _rotEmpty = new TextLabel(T("Noch keine Maps – links doppelklicken", "No maps yet – double-click on the left"), Theme.Body); _rotEmpty.Color = Theme.Mute;
             foreach (Control c in new Control[] { _lbRot, _bUp, _bDown, _bDel, _bShuffle, _bUndo, _bClear, _rotEmpty }) _cRot.Controls.Add(c);
@@ -146,9 +149,9 @@ namespace BF2Coop
             _availEmpty.Location = new Point((cw - _availEmpty.Width) / 2, hh + Dpi.D(60));
             _lbRot.SetBounds(Dpi.D(8), hh - Dpi.D(4), cw - Dpi.D(16), h - hh + Dpi.D(4) - Dpi.D(58));
             int bx = Dpi.D(12);
-            foreach (FlatButton b in new FlatButton[] { _bUp, _bDown, _bDel, _bShuffle }) { b.Location = new Point(bx, h - Dpi.D(50)); bx += b.Width + Dpi.D(4); }
-            _bClear.Location = new Point(cw - Dpi.D(12) - _bClear.Width, h - Dpi.D(50));
-            _bUndo.Location = new Point(_bClear.Left - Dpi.D(6) - _bUndo.Width, h - Dpi.D(50));
+            // Symbolknöpfe links (Rückgängig direkt neben Mischen), „Leeren“ rechts – nichts überlappt
+            foreach (FlatButton b in new FlatButton[] { _bUp, _bDown, _bDel, _bShuffle, _bUndo }) { b.Location = new Point(bx, h - Dpi.D(48)); bx += b.Width + Dpi.D(2); }
+            _bClear.Location = new Point(Math.Max(bx + Dpi.D(2), cw - Dpi.D(12) - _bClear.Width), h - Dpi.D(48));
             _rotEmpty.Location = new Point((cw - _rotEmpty.Width) / 2, hh + Dpi.D(40));
             LayoutMapRight();
         }

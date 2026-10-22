@@ -5,6 +5,10 @@
 
 **The Battlefield 2 launcher for LAN parties: find the server and join with one click – or host a coop server with bots.**
 
+### [⬇ Download BF2Manager.exe (latest version)](https://github.com/AnselmJo/bf2-manager/releases/latest/download/BF2Manager.exe)
+
+Click, save, start – that's it. Windows SmartScreen may warn because the file is not signed: *More info › Run anyway*. Checksum: [SHA256SUMS.txt](https://github.com/AnselmJo/bf2-manager/releases/latest/download/SHA256SUMS.txt) · [all releases](https://github.com/AnselmJo/bf2-manager/releases) · the manager updates itself afterwards.
+
 One single `.exe`, no installation, German and English. Two modes, switched at the top left:
 
 | **Play** | **Host** |
@@ -36,7 +40,7 @@ One single `.exe`, no installation, German and English. Two modes, switched at t
 
 ## Quick start
 
-1. Download **`BF2Manager.exe`** from the [latest release](https://github.com/AnselmJo/bf2-manager/releases/latest).
+1. Download **[`BF2Manager.exe`](https://github.com/AnselmJo/bf2-manager/releases/latest/download/BF2Manager.exe)** (always the latest version).
 2. Put it into your Battlefield 2 folder (next to `BF2.exe`) – or anywhere, it finds the game.
 3. Start it (SmartScreen: *More info › Run anyway*), enter your player name, click **Fix** if the bar is yellow.
 4. **Play:** click **Join** on a server. **Host:** switch to *Host* at the top left and follow the one-time setup.
@@ -60,7 +64,9 @@ Windows 10/11 (.NET Framework 4.5+ is part of Windows) and Battlefield 2 with pa
 
 ## Deutsch
 
-Der BF2 Manager ist komplett zweisprachig (*Einstellungen › Sprache*). `BF2Manager.exe` in den Battlefield-2-Ordner legen, starten, Namen eingeben – Server erscheinen automatisch, **Beitreten** klicken. Wer hostet, schaltet oben links auf **Hosten**.
+**[⬇ BF2Manager.exe herunterladen (neueste Version)](https://github.com/AnselmJo/bf2-manager/releases/latest/download/BF2Manager.exe)**
+
+Der BF2 Manager ist komplett zweisprachig (*Einstellungen › Sprache*). Exe herunterladen, starten (SmartScreen: *Weitere Informationen › Trotzdem ausführen*), Spielordner und Namen bestätigen – Server erscheinen automatisch, **Beitreten** klicken. Wer hostet, schaltet oben links auf **Hosten**. Updates holt sich der Manager danach selbst.
 
 ## License and disclaimer
 

@@ -40,11 +40,12 @@ namespace BF2Coop
             LanHost fake3 = new LanHost(); fake3.Ip = "192.168.1.44"; fake3.Name = "Pirates Abend"; fake3.Mod = "bfp2"; fake3.Map = "frylar"; fake3.Humans = 2; fake3.Max = 32; fake3.Running = true; fake3.Version = AppInfo.Version; fake3.Mode = "cq"; fake3.Size = 32; fake3.Id = "b2"; fake3.GamePort = 16567; fake3.HttpPort = Lan.HttpPort;
             fake.Mode = "coop";
             _fakeHosts = new List<LanHost> { fake, fake2, fake3 };
-            steps.Add(delegate { SetRole(true); ShowServerView(); if (_lbRot.Items.Count > 1) _lbRot.SelectedIndex = 1; });
+            steps.Add(delegate { SetRole(true); ShowServerView(); if (_lbRot.Items.Count > 1) _lbRot.SelectedIndex = 1; PushUndo(); });
             steps.Add(delegate { Shot("host_server"); SelectPage(PgBots); });
             steps.Add(delegate { Shot("host_bots"); _botHost.ScrollTo(99999, false); });
             steps.Add(delegate { Shot("host_bots_scrolled"); SelectPage(PgServer); });
-            steps.Add(delegate { Shot("host_options"); SelectPage(PgExtras); });
+            steps.Add(delegate { Shot("host_options"); _advToggle.Checked = !_advToggle.Checked; });
+            steps.Add(delegate { Shot("host_options_adv"); _advToggle.Checked = !_advToggle.Checked; SelectPage(PgExtras); });
             steps.Add(delegate { Shot("host_settings"); Srv.FakeRunning = true; RefreshLive(); ShowServerView(); });
             steps.Add(delegate { Shot("host_live"); _forceConfig = true; SelectPage(PgMaps); });
             steps.Add(delegate { Shot("host_server_running"); SelectPage(PgServer); _vals["sv.maxPlayers"] = "48"; UpdateLiveBanner(); });
