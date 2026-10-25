@@ -35,7 +35,7 @@ namespace BF2Coop
             LanHost fake = new LanHost(); fake.Ip = "192.168.1.20"; fake.Name = "Ansis LAN Coop"; fake.Mod = "bf2all64"; fake.Map = "strike_at_karkand"; fake.Humans = 6; fake.Max = 64; fake.Running = true; fake.Version = AppInfo.Version; fake.GamePort = 16567; fake.HttpPort = Lan.HttpPort;
             LanHost fake2 = new LanHost(); fake2.Ip = "192.168.1.31"; fake2.Name = "Kater PC"; fake2.Mod = "bfp2"; fake2.Map = ""; fake2.Running = false; fake2.Version = "1.2.0"; fake2.GamePort = 16567; fake2.HttpPort = Lan.HttpPort;
             _fakeHosts = new List<LanHost> { fake, fake2 };
-            CommandDialog[] dlg = new CommandDialog[1]; WelcomeDialog[] wel = new WelcomeDialog[1];
+            CommandDialog[] dlg = new CommandDialog[1]; WelcomeDialog[] wel = new WelcomeDialog[1]; BotNowDialog[] bn = new BotNowDialog[1];
             fake.Size = 32; fake.Bots = 24; fake.ModVersion = "1.0"; fake.Id = "a1";
             LanHost fake3 = new LanHost(); fake3.Ip = "192.168.1.44"; fake3.Name = "Pirates Abend"; fake3.Mod = "bfp2"; fake3.Map = "frylar"; fake3.Humans = 2; fake3.Max = 32; fake3.Running = true; fake3.Version = AppInfo.Version; fake3.Mode = "cq"; fake3.Size = 32; fake3.Id = "b2"; fake3.GamePort = 16567; fake3.HttpPort = Lan.HttpPort;
             fake.Mode = "coop";
@@ -47,7 +47,9 @@ namespace BF2Coop
             steps.Add(delegate { Shot("host_options"); _advToggle.Checked = !_advToggle.Checked; });
             steps.Add(delegate { Shot("host_options_adv"); _advToggle.Checked = !_advToggle.Checked; SelectPage(PgExtras); });
             steps.Add(delegate { Shot("host_settings"); Srv.FakeRunning = true; RefreshLive(); ShowServerView(); });
-            steps.Add(delegate { Shot("host_live"); _forceConfig = true; SelectPage(PgMaps); });
+            steps.Add(delegate { Shot("host_live"); ShowResult("admin.listPlayers", "Id:255 - C. Bergqvist is remote  is an AI bot. | Id:254 - S. Parkinson is remote  is an AI bot. | Id:3 - Ansi  is remote"); });
+            steps.Add(delegate { Shot("host_live_result"); _module = true; bn[0] = new BotNowDialog("Dalian Plant", _st.Defaults[16].Clone(), 16, 6, 0); bn[0].StartPosition = FormStartPosition.Manual; bn[0].Location = PointToScreen(new Point(Dpi.D(200), Dpi.D(60))); bn[0].Show(this); });
+            steps.Add(delegate { Shot("botnow"); bn[0].Close(); _cmdResult.Text = ""; LayoutLive(); _forceConfig = true; SelectPage(PgMaps); });
             steps.Add(delegate { Shot("host_server_running"); SelectPage(PgServer); _vals["sv.maxPlayers"] = "48"; UpdateLiveBanner(); });
             steps.Add(delegate { Shot("host_options_running"); Srv.FakeRunning = false; _userStopped = false; RefreshLive(); });
             steps.Add(delegate { Shot("host_crashed"); SetRole(false); });

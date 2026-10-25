@@ -217,7 +217,7 @@ namespace BF2Coop
         {
             if (mod == _mod && coop == _coop) return;
             if (!ConfirmDiscard()) { _selMod.SetSilent(_mod); _segType.SetSilent(_coop ? 0 : 1); return; }
-            _mod = mod; _coop = coop;
+            _mod = mod; _coop = coop; UpdateCoopHints();
             _cfg.Set("LastMod", _mod); _cfg.Set("LastType", _coop ? "coop" : "conquest"); _cfg.Save();
             _preview.Set(null, "", "");
             foreach (Image i in _img.Values) if (i != null) i.Dispose();

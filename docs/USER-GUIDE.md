@@ -1,10 +1,12 @@
-# User guide
+﻿# User guide
 
 Switch between **Play** and **Host** at the top left. Every setting has an **ⓘ** with an explanation, the default and when a change applies. Everything is saved automatically.
 
 ## Where the manager lives
 
-Started from Downloads or a ZIP? The manager offers once to **copy itself into the game folder** (next to `BF2.exe`), adds the firewall rule for that place, puts a *BF2 Manager* shortcut on the desktop and restarts from there. The old copy can be deleted afterwards. Any time later: *Settings › Folders › Copy manager to game folder*.
+The manager finds the game folder by itself when it sits **next to it** (`Battlefield2\BF2Manager.exe` and `Battlefield2\Battlefield 2\BF2.exe`), inside it, or in a subfolder such as `_LAN`.
+
+Started from Downloads or a ZIP? The manager offers once to **copy itself next to the game folder**, adds the firewall rule for that place, puts a *BF2 Manager* shortcut on the desktop and restarts from there. The old copy can be deleted afterwards. Any time later: *Settings › Folders › Copy manager next to the game folder*.
 
 ## First start
 
@@ -33,6 +35,10 @@ On the first switch to *Host* you set up the server once (pick mods, one Windows
 - Double-click a map on the left (filter by size) to add it. Drag the **≡** handle to sort, **right-click** for more (custom bot values, duplicate, remove). The icons below the rotation: up, down, remove, shuffle, undo, clear (hover for a tooltip).
 - Select a map to see its preview and its **bot values**. *Custom values* gives this map its own bots (★).
 - **Recent & presets**: reload a configuration you started before, or save/load named presets.
+
+**Console and results:** type a command under *Actions* (or pick one via *Commands*); the server answers within a few seconds and the answer appears below the field. `kick <name>` and `ban <name>` work with the player name. **Change bots …** sets the bot count for the running map (the map reloads, players stay connected) – kicking single bots does not help, the AI refills them.
+
+**Keep vehicles off:** `sv.noVehicles` only works in *Conquest*. In *Coop* the game ignores it.
 
 While the server runs, **Server** shows the **live view**: players (kick), current and upcoming maps, next map now, restart round, message to all, console with **Commands** assistant, scheduled messages, evening leaderboard. *Edit rotation & bots* switches to the configuration – changes apply from the next map and are sent to the server automatically.
 

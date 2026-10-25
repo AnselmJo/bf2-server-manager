@@ -1,10 +1,14 @@
-# Changelog
+﻿# Changelog
 
 ## [1.2.3]
 
 Bug fixes and an easier download.
 
 ### Fixed
+- **Console results were invisible:** commands (e.g. `admin.listPlayers`, `sv.coopBotCount`) ran, but the answer only landed in a log that is no longer shown. The answer now appears under the console field within a few seconds, with a hint when the ID is wrong or the server does not reply.
+- **Kick from the console:** `kick <name>`, `ban <name>` and `admin.kickPlayer <name>` now resolve the player name to the ID (IDs still work). Unknown or ambiguous names get a clear message.
+- **Bot module 5:** after *Next map now* the module recomputed the bot values a second later at the end-of-round event and so threw away one-time values. Fixed. New command `@reload` reloads the **current** map with new bot values.
+- **Keep vehicles off in coop:** `sv.noVehicles` is ignored by the game in coop mode (tested with `bf2` and `bf2all64`: identical objects with 0 and 1; in Conquest the vehicles disappear). The setting is now marked *Conquest only* with an explanation.
 - **Advanced server settings:** switching *Advanced* on or off showed "Unexpected error: object reference not set" and the advanced cards never appeared.
 - **Own server missing on Play:** a server running on this PC is now always listed (marked *this PC*), even if the PC does not receive its own network announcement (firewall, VPN adapters).
 - **Rotation toolbar:** *Undo* overlapped *Shuffle* / *Clear*. All rotation actions are now compact icons with tooltips (up, down, remove, shuffle, undo, clear).
@@ -13,6 +17,9 @@ Bug fixes and an easier download.
 - **Firewall check was too optimistic:** a rule only counted by its name, so after moving the exe (e.g. from a ZIP or Downloads) the check said *OK* while Windows blocked the manager at the new place. Rules now must point to the current path. *Add rules* also replaces the rules Windows creates at its first prompt, which often allow only *public* networks.
 
 ### New
+- **Change bots while the game runs** (*Live › Actions › Change bots …*): set count, distribution and difficulty for the running map; the map reloads (about 30 s), all players stay connected. Kicking single bots does not work – the AI refills them at once. The values apply to this round only.
+- **Game folder is found automatically** when the manager sits next to it – the usual layout `Battlefield2\BF2Manager.exe` + `Battlefield2\Battlefield 2\BF2.exe` – or inside it, or in a subfolder like `_LAN`. The copy offer (*Settings › Folders*) now targets that layout.
+- **Registration check** in *Settings › This PC*: shows whether the Battlefield 2 registration entry exists in the Windows registry (display only; the serial number belongs to your own copy).
 - **Server search check** in *Settings › This PC*: the manager tests whether its own LAN announcement comes back. If not, it says so and offers **Allow in firewall** (one Windows prompt). Player PCs without a server send a small test packet for this; older managers ignore it.
 - **Copy the manager into the game folder:** if it runs from somewhere else (e.g. Downloads), the manager offers once to copy itself next to `BF2.exe` – with a firewall rule for the new place and a *BF2 Manager* desktop shortcut – restarts from there and offers to delete the old copy. Also under *Settings › Folders*.
 - **Refresh** button on *Servers on the network*. The list still updates by itself every few seconds; the note *searching …* shows that it is looking.

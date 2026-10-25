@@ -36,7 +36,7 @@ namespace BF2Coop
     {
         public const string Name = "BF2 Manager";
         public const string Version = "1.2.3";
-        public const int ModuleVersion = 4;
+        public const int ModuleVersion = 5;
         public const string Repo = "AnselmJo/bf2-manager";
         public const string RepoUrl = "https://github.com/" + Repo;
         public const string ExeName = "BF2Manager.exe";
@@ -90,8 +90,33 @@ namespace BF2Coop
             return !string.IsNullOrEmpty(d) && (File.Exists(Path.Combine(d, "BF2.exe")) || File.Exists(Path.Combine(d, "bf2_w32ded.exe")));
         }
 
-        // Liegt der Manager im Spielordner (LAN-Ordner), gilt dieser immer.
-        public static string Portable() { return IsGameDir(AppPaths.ExeDir) ? AppPaths.ExeDir.TrimEnd('\\', '/') : null; }
+        // Liegt der Manager im Spielordner oder direkt daneben (LAN-Ordner), gilt dieser immer. Üblich:
+        //   Battlefield2\BF2Manager.exe  +  Battlefield2\Battlefield 2\BF2.exe   (Manager neben dem Spielordner)
+        //   Battlefield 2\BF2Manager.exe + Battlefield 2\BF2.exe                  (Manager im Spielordner)
+        public static string Portable() { return PortableFrom(AppPaths.ExeDir); }
+
+        public static string PortableFrom(string exeDir)
+        {
+            try
+            {
+                string d = (exeDir ?? "").TrimEnd('\\', '/');
+                if (d.Length == 0) return null;
+                if (IsGameDir(d)) return d;
+                string sub = Path.Combine(d, "Battlefield 2");
+                if (IsGameDir(sub)) return sub;
+                // andere Unterordner, die nach Battlefield aussehen (z. B. „Battlefield 2 – Kopie“, „BF2“)
+                foreach (string s in Directory.GetDirectories(d))
+                {
+                    string n = Path.GetFileName(s).ToLowerInvariant();
+                    if ((n.Contains("battlefield") || n.Contains("bf2")) && IsGameDir(s)) return s.TrimEnd('\\', '/');
+                }
+                // Manager in einem Unterordner des Spielordners (z. B. _LAN)
+                string parent = Path.GetDirectoryName(d);
+                if (!string.IsNullOrEmpty(parent) && IsGameDir(parent)) return parent.TrimEnd('\\', '/');
+            }
+            catch { }
+            return null;
+        }
 
         public static string Find()
         {

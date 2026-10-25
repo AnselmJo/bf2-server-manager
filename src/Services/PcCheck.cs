@@ -37,6 +37,25 @@ namespace BF2Coop
         public bool NeedsFix { get { return Status == CheckStatus.Warn || Status == CheckStatus.Error; } }
     }
 
+    // Nur lesen: ist die Registrierung von Battlefield 2 in der Windows-Registry vorhanden?
+    public static class Registration
+    {
+        public static bool Present()
+        {
+            foreach (RegistryView v in new RegistryView[] { RegistryView.Registry32, RegistryView.Registry64 })
+            {
+                try
+                {
+                    using (RegistryKey b = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, v))
+                    using (RegistryKey k = b.OpenSubKey(@"SOFTWARE\Electronic Arts\EA Games\Battlefield 2\ergc"))
+                        if (k != null) { object o = k.GetValue(""); if (o != null && o.ToString().Length > 0) return true; }
+                }
+                catch { }
+            }
+            return false;
+        }
+    }
+
     public static class PcCheck
     {
         static string T(string de, string en) { return I18n.T(de, en); }
@@ -52,6 +71,19 @@ namespace BF2Coop
             g.Status = CheckStatus.Ok;
             string ver = GameLocator.FileVersion(exe);
             g.Detail = gameDir + (ver != null && ver != "?" ? "  ·  BF2 " + ver : "") + (GameLocator.IsBf2Hub(gameDir) ? "  ·  BF2Hub" : "") + (GameLocator.Portable() != null ? T("  ·  LAN-Ordner", "  ·  LAN folder") : "");
+
+            // Spiel-Registrierung: nur Anzeige. Die Seriennummer gehört zum eigenen Exemplar und wird nicht vom Manager gesetzt.
+            if (File.Exists(exe))
+            {
+                CheckItem reg = New(r, "reg", T("Registrierung", "Registration"));
+                if (Registration.Present()) { reg.Status = CheckStatus.Ok; reg.Detail = T("Battlefield 2 ist auf diesem PC registriert.", "Battlefield 2 is registered on this PC."); }
+                else
+                {
+                    reg.Status = CheckStatus.Info;
+                    reg.Detail = T("Im Windows-Register fehlt der Eintrag von Battlefield 2 (Seriennummer). Ohne ihn startet das Spiel oder der Serverbeitritt evtl. nicht. Das Spiel mit der eigenen Seriennummer installieren bzw. registrieren – der Manager kann das nicht übernehmen.",
+                        "The Windows registry entry of Battlefield 2 (serial number) is missing. Without it the game or joining a server may not work. Install or register the game with your own serial number – the manager cannot do this for you.");
+                }
+            }
 
             CheckItem w = New(r, "write", T("Schreibrechte", "Write access"));
             bool canWrite = Installer.CanWrite(Path.Combine(gameDir, "mods"));

@@ -115,8 +115,8 @@ namespace BF2Coop
             Theme.Tip.SetToolTip(bDirChange, T("Spielordner ändern\nNur nötig, wenn Battlefield 2 woanders liegt als erkannt.", "Change game folder\nOnly needed if Battlefield 2 is somewhere else than detected."));
             bDirChange.Click += delegate { ChooseGameDir(); };
             fb.Add(bDirChange);
-            FlatButton bMove = new FlatButton(T("Manager in den Spielordner kopieren …", "Copy manager to game folder …"), G.Copy, BtnKind.Ghost);
-            Theme.Tip.SetToolTip(bMove, T("Manager in den Spielordner kopieren\nDort bleibt die Firewall-Freigabe gültig, und beim Kopieren des Spielordners ist der Manager dabei. Legt eine Desktop-Verknüpfung an.", "Copy manager to game folder\nThere the firewall rule stays valid, and the manager comes along when the game folder is copied. Creates a desktop shortcut."));
+            FlatButton bMove = new FlatButton(T("Manager neben den Spielordner kopieren …", "Copy manager next to the game folder …"), G.Copy, BtnKind.Ghost);
+            Theme.Tip.SetToolTip(bMove, T("Manager neben den Spielordner kopieren\nDort bleibt die Firewall-Freigabe gültig, der Spielordner wird automatisch gefunden, und beim Kopieren des Ordners ist der Manager dabei. Legt eine Desktop-Verknüpfung an.", "Copy manager next to the game folder\nThere the firewall rule stays valid, the game folder is found automatically, and the manager comes along when the folder is copied. Creates a desktop shortcut."));
             bMove.Click += delegate { MoveToGameDir(); };
             fb.Add(bMove);
             foreach (FlatButton b in fb) cFolders.Controls.Add(b);

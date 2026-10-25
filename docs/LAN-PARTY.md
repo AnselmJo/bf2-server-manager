@@ -1,4 +1,4 @@
-# Preparing a LAN party
+﻿# Preparing a LAN party
 
 Goal: **one folder** that you copy to every PC. Nobody installs anything, nobody edits files.
 
@@ -7,14 +7,16 @@ Goal: **one folder** that you copy to every PC. Nobody installs anything, nobody
 ## 1. Build the folder (host, once)
 
 ```
-Battlefield 2\                  ← your game folder, e.g. copied to C:\Games\Battlefield 2
-  BF2.exe
-  bf2_w32ded.exe
-  mods\                         ← all mods you want to play (bf2all64, xpack, …)
-  BF2Manager.exe          ← put the manager here (download: github.com/AnselmJo/bf2-manager/releases/latest/download/BF2Manager.exe)
-  _LAN\
-    DirectX\                    ← optional but recommended (see below)
-    ReShade\                    ← optional
+Battlefield2\                    ← LAN folder, e.g. C:\Games\Battlefield2
+  BF2Manager.exe                ← the manager (download: github.com/AnselmJo/bf2-manager/releases/latest/download/BF2Manager.exe)
+                                   – finds the game folder next to it by itself
+  Battlefield 2\                ← your game folder
+    BF2.exe
+    bf2_w32ded.exe
+    mods\                       ← all mods you want to play (bf2all64, xpack, …)
+    _LAN\
+      DirectX\                  ← optional but recommended (see below)
+      ReShade\                  ← optional
 ```
 
 Tips:

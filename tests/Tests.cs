@@ -1,4 +1,4 @@
-// Tests.cs - automatische Tests ohne Test-Framework (läuft in CI unter Windows und lokal mit Mono). C# 5.
+﻿// Tests.cs - automatische Tests ohne Test-Framework (läuft in CI unter Windows und lokal mit Mono). C# 5.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -40,6 +40,7 @@ namespace BF2Coop.Tests
             Run("profiles", ProfileFiles);
             Run("profilemanage", ProfileManage);
             Run("radio", Radio);
+            Run("gamefolder", GameFolder);
             Run("moddesc", ModDesc);
             Run("commands", Cmds);
             Run("scrub", Scrub);
@@ -221,6 +222,24 @@ namespace BF2Coop.Tests
                 Check(!Directory.Exists(r.Dir) && Profiles.DefaultId() == "0002", "delete moves default to the remaining profile");
             }
             finally { Profiles.RootOverride = null; }
+        }
+
+        static void GameFolder()
+        {
+            string root = Path.Combine(_tmp, "gf");
+            // Manager neben dem Spielordner: Battlefield2\BF2Manager.exe + Battlefield2\Battlefield 2\BF2.exe
+            string lan = Path.Combine(root, "lan"), game = Path.Combine(lan, "Battlefield 2");
+            Directory.CreateDirectory(game); File.WriteAllText(Path.Combine(game, "BF2.exe"), "x");
+            Check(GameLocator.PortableFrom(lan) == game, "manager next to the game folder finds it");
+            Check(GameLocator.PortableFrom(game) == game, "manager inside the game folder");
+            string sub = Path.Combine(game, "_LAN"); Directory.CreateDirectory(sub);
+            Check(GameLocator.PortableFrom(sub) == game, "manager in a subfolder of the game folder");
+            // anderer Name, Server-only-Installation
+            string lan2 = Path.Combine(root, "lan2"), g2 = Path.Combine(lan2, "BF2 Kopie"); Directory.CreateDirectory(g2); File.WriteAllText(Path.Combine(g2, "bf2_w32ded.exe"), "x");
+            Check(GameLocator.PortableFrom(lan2) == g2, "other game folder name (bf2) and server-only install");
+            // kein Spiel in der Nähe
+            string none = Path.Combine(root, "none"); Directory.CreateDirectory(Path.Combine(none, "Photos"));
+            Check(GameLocator.PortableFrom(none) == null && GameLocator.PortableFrom("") == null, "no game nearby gives null");
         }
 
         static void Radio()

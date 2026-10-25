@@ -28,7 +28,10 @@ namespace BF2Coop
 {
     public partial class MainForm
     {
-        FlatButton _bHelp; Para _cmdHint;
+        FlatButton _bHelp, _bBotsNow; Para _cmdHint, _cmdResult;
+        class PendingCmd { public string Cmd; public DateTime At; }
+        readonly List<PendingCmd> _pending = new List<PendingCmd>();
+        List<string[]> _curPlayers = new List<string[]>(); string _botsNowId = "";
         // ================================================================== Seite Live
         void BuildLive()
         {
@@ -83,6 +86,10 @@ namespace BF2Coop
             _bHelp.Click += delegate { OpenCommands(); };
             _cmdHint = new Para(T("Tipp: „Befehle“ zeigt alle Möglichkeiten. Beim Tippen werden Befehle vorgeschlagen.", "Tip: “Commands” shows everything possible. Commands are suggested while typing."));
             _cmdHint.Color = Theme.Mute; _cmdHint.Font = Theme.Small;
+            _cmdResult = new Para(""); _cmdResult.Color = Theme.Text; _cmdResult.Font = Theme.Mono;
+            _bBotsNow = new FlatButton(T("Bots ändern …", "Change bots …"), G.Robot, BtnKind.Secondary);
+            Theme.Tip.SetToolTip(_bBotsNow, T("Bots ändern\nSetzt die Botzahl für die laufende Map neu. Die Map wird dafür neu geladen (ca. 30 Sekunden), alle Spieler bleiben verbunden.\n\nBots einzeln kicken bringt nichts: Die KI füllt sie sofort wieder auf.", "Change bots\nSets the bot count for the running map. The map is reloaded for this (about 30 seconds); all players stay connected.\n\nKicking single bots does not help: the AI refills them right away."));
+            _bBotsNow.Click += delegate { BotsNow(); };
             try
             {
                 _cmd.Box.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
@@ -91,12 +98,12 @@ namespace BF2Coop
                 _cmd.Box.AutoCompleteCustomSource = ac;
             }
             catch { }
-            foreach (Control c in new Control[] { _bNextMap, _bRestart, _say, _bSay, _cmd, _bSend, _bHelp, _cmdHint }) _cAct.Controls.Add(c);
+            foreach (Control c in new Control[] { _bNextMap, _bRestart, _bBotsNow, _say, _bSay, _cmd, _bSend, _bHelp, _cmdHint, _cmdResult }) _cAct.Controls.Add(c);
 
             _cAct.Layouter = delegate (int w)
             {
                 int x = Dpi.D(20), y = _cAct.HeaderH - Dpi.D(4);
-                foreach (FlatButton b in new FlatButton[] { _bNextMap, _bRestart })
+                foreach (FlatButton b in new FlatButton[] { _bNextMap, _bRestart, _bBotsNow })
                 {
                     if (x + b.Width > w - Dpi.D(20)) { x = Dpi.D(20); y += Dpi.D(42); }
                     b.Location = new Point(x, y); x += b.Width + Dpi.D(10);
@@ -112,7 +119,10 @@ namespace BF2Coop
                 y += _bSend.Height + Dpi.D(6);
                 int hh = _cmdHint.HeightFor(w - Dpi.D(40));
                 _cmdHint.SetBounds(Dpi.D(20), y, w - Dpi.D(40), hh);
-                return y + hh + Dpi.D(14);
+                y += hh;
+                bool res = _cmdResult.Text.Length > 0; _cmdResult.Visible = res;
+                if (res) { int rh = Math.Min(_cmdResult.HeightFor(w - Dpi.D(40)), Dpi.D(260)); _cmdResult.SetBounds(Dpi.D(20), y + Dpi.D(6), w - Dpi.D(40), rh); y += rh + Dpi.D(8); }
+                return y + Dpi.D(14);
             };
 
             _cPlayers = new Card(T("Spieler", "Players"), G.People);
@@ -206,7 +216,7 @@ namespace BF2Coop
             {
                 d.ShowDialog(this);
                 if (d.Result == 1) { _cmd.Value = d.Command; _cmd.Box.Focus(); _cmd.Box.SelectionStart = _cmd.Value.Length; }
-                else if (d.Result == 2) SendCmd(d.Command, T("Gesendet: ", "Sent: ") + d.Command + T(" – Ergebnis im Log.", " – result in the log."));
+                else if (d.Result == 2) SendCmdTracked(d.Command);
             }
         }
 
@@ -237,8 +247,121 @@ namespace BF2Coop
         {
             string c = (_cmd.Value ?? "").Trim();
             if (c.Length == 0) return;
-            SendCmd(c, T("Gesendet: ", "Sent: ") + c);
-            if (_running) _cmd.Value = "";
+            string err; c = ResolveCommand(c, out err);
+            if (err != null) { Toast(err, ToastKind.Warn); return; }
+            if (!RequireServer()) return;
+            SendCmdTracked(c);
+            _cmd.Value = "";
+        }
+
+        // Kurzformen: „kick Name“, „ban Name“, admin.kickPlayer Name – der Name wird zur Spieler-ID aufgelöst
+        string ResolveCommand(string c, out string error)
+        {
+            error = null;
+            System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(c, @"^(?:admin\.)?(kick|ban)(?:Player)?\s+(.+)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!m.Success) return c;
+            string verb = m.Groups[1].Value.ToLowerInvariant() == "ban" ? "admin.banPlayer" : "admin.kickPlayer", arg = m.Groups[2].Value.Trim().Trim((char)34);
+            int id; if (int.TryParse(arg, out id)) return verb + " " + id;
+            List<string[]> exact = new List<string[]>(), part = new List<string[]>();
+            foreach (string[] p in _curPlayers)
+            {
+                if (p[2].Equals(arg, StringComparison.OrdinalIgnoreCase)) exact.Add(p);
+                else if (p[2].IndexOf(arg, StringComparison.OrdinalIgnoreCase) >= 0) part.Add(p);
+            }
+            List<string[]> hit = exact.Count > 0 ? exact : part;
+            if (hit.Count == 1) return verb + " " + hit[0][0];
+            error = hit.Count == 0 ? T("Kein Spieler „", "No player “") + arg + T("“ verbunden – Namen stehen in der Liste „Spieler“.", "” connected – names are in the “Players” list.")
+                                   : T("„", "“") + arg + T("“ passt auf mehrere Spieler – bitte genauer eingeben.", "” matches several players – please be more specific.");
+            return c;
+        }
+
+        // Befehl senden und die Antwort des Servers in der Karte anzeigen (steht nach wenigen Sekunden im Log)
+        void SendCmdTracked(string cmd)
+        {
+            if (!RequireServer()) return;
+            SendCmd(cmd, null);
+            PendingCmd p = new PendingCmd(); p.Cmd = cmd; p.At = DateTime.Now; _pending.Add(p);
+            _cmdResult.Text = "› " + cmd + "\n" + T("Warte auf Antwort des Servers … (bis zu 5 Sekunden)", "Waiting for the server" + (char)39 + "s reply … (up to 5 seconds)");
+            LayoutLive();
+        }
+
+        // Antworten aus dem Log holen: Zeile „… command <Befehl> -> <Ergebnis>“
+        void CheckResults(string[] lines)
+        {
+            if (_pending.Count == 0) return;
+            for (int i = _pending.Count - 1; i >= 0; i--)
+            {
+                PendingCmd p = _pending[i]; string key = "command " + p.Cmd + " -> ", found = null;
+                for (int k = lines.Length - 1; k >= 0 && found == null; k--)
+                {
+                    int at = lines[k].IndexOf(key, StringComparison.Ordinal);
+                    if (at < 0) continue;
+                    DateTime ts;
+                    if (lines[k].Length >= 19 && DateTime.TryParse(lines[k].Substring(0, 19), out ts) && ts < p.At.AddSeconds(-3)) continue;
+                    found = lines[k].Substring(at + key.Length);
+                }
+                if (found != null) { ShowResult(p.Cmd, found); _pending.RemoveAt(i); }
+                else if ((DateTime.Now - p.At).TotalSeconds > 40)
+                {
+                    _cmdResult.Text = "› " + p.Cmd + "\n⚠ " + T("Keine Antwort. Läuft der Server mit Bot-Modul? (Einstellungen › Diagnose › Server-Log)", "No reply. Is the server running with the bot module? (Settings › Diagnostics › Server log)");
+                    _pending.RemoveAt(i); LayoutLive();
+                }
+            }
+        }
+
+        void ShowResult(string cmd, string res)
+        {
+            string[] parts = (res ?? "").Replace("\r", "").Split(new string[] { " | " }, StringSplitOptions.RemoveEmptyEntries);
+            List<string> rows = new List<string>();
+            foreach (string s in parts) { string x = s.Trim(); if (x.Length > 0) rows.Add(x); }
+            StringBuilder sb = new StringBuilder("› " + cmd + "\n");
+            if (rows.Count == 0) sb.Append("✓ ").Append(T("ausgeführt", "done"));
+            else
+            {
+                int max = 14;
+                for (int i = 0; i < rows.Count && i < max; i++) sb.Append(rows[i]).Append(i + 1 < rows.Count && i + 1 < max ? "\n" : "");
+                if (rows.Count > max) sb.Append("\n… +").Append(rows.Count - max);
+                if (cmd.StartsWith("admin.kickPlayer") && rows[0].IndexOf("not found", StringComparison.OrdinalIgnoreCase) >= 0) sb.Append("\n").Append(T("Die ID stimmt nicht – Spieler stehen rechts in der Liste „Spieler“.", "The ID is wrong – players are in the “Players” list on the right."));
+            }
+            _cmdResult.Text = sb.ToString();
+            LayoutLive();
+        }
+
+        // Botzahl für die laufende Map ändern: einmalige Werte schreiben, Map neu laden (@reload im Bot-Modul)
+        void BotsNow()
+        {
+            if (!RequireServer()) return;
+            if (!_coop) { Toast(T("Bots gibt es nur im Coop-Modus.", "Bots exist in coop mode only."), ToastKind.Info); return; }
+            if (!_module) { Toast(T("Das Bot-Modul meldet sich noch nicht – bitte kurz warten oder Einstellungen › Einrichtung prüfen.", "The bot module is not responding yet – please wait a moment or check Settings › Setup."), ToastKind.Warn); return; }
+            string map; _lastLive.TryGetValue("map", out map);
+            MapEntry cur = null;
+            foreach (MapEntry me in _st.Maps) if (string.Equals(me.Name, map, StringComparison.OrdinalIgnoreCase)) { cur = me; break; }
+            int size = cur != null ? cur.Size : 32;
+            BotOpt start = (cur != null ? OptFor(cur) : _st.Defaults[32]).Clone();
+            using (BotNowDialog d = new BotNowDialog(Util.Pretty(map ?? ""), start, size, _hUS.Value, _hMEC.Value))
+            {
+                d.ShowDialog(this);
+                if (d.Result == null) return;
+                try
+                {
+                    CoopState st = CoopTxt.Read(CoopTxtPath);
+                    if (st == null) { Toast(T("coop_server.txt fehlt – zuerst speichern.", "coop_server.txt missing – save first."), ToastKind.Warn); return; }
+                    BotOpt o = d.Result; o.Id = DateTime.Now.ToString("HHmmssff"); _botsNowId = o.Id; st.Next = o;
+                    CoopTxt.Write(CoopTxtPath, st);
+                    SendCmd("@reload", null);
+                    Toast(T("Map wird neu geladen – die neue Botzahl gilt in ca. 30 Sekunden.", "Reloading the map – the new bot count applies in about 30 seconds."), ToastKind.Ok);
+                }
+                catch (UnauthorizedAccessException) { NoRights(); }
+                catch (Exception ex) { Toast(T("Schreiben fehlgeschlagen: ", "Writing failed: ") + ex.Message, ToastKind.Error); }
+            }
+        }
+
+        // Einmalige Werte nach dem Neuladen wieder aus der Datei nehmen, damit sie beim nächsten Serverstart nicht noch einmal greifen
+        void BotsNowDone(string usedId)
+        {
+            if (_botsNowId.Length == 0 || usedId != _botsNowId) return;
+            _botsNowId = "";
+            try { CoopState st = CoopTxt.Read(CoopTxtPath); if (st != null && st.Next != null) { st.Next = null; CoopTxt.Write(CoopTxtPath, st); } } catch { }
         }
 
         void SendLiveSettings()
@@ -281,6 +404,7 @@ namespace BF2Coop
 
         void UpdatePlayers(List<string[]> ps)
         {
+            _curPlayers = ps;
             StringBuilder ids = new StringBuilder();
             foreach (string[] p in ps) ids.Append(p[0]).Append(',');
             if (ids.ToString() != _playerSig)

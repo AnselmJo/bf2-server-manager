@@ -126,7 +126,18 @@ namespace BF2Coop
             MarkDirty();
         }
 
-        void ApplyVals() { foreach (SettingDef d in Defs.All) { string v; if (!_vals.TryGetValue(d.Key, out v)) v = d.Def; SetEditor(d, v); } }
+        void ApplyVals() { foreach (SettingDef d in Defs.All) { string v; if (!_vals.TryGetValue(d.Key, out v)) v = d.Def; SetEditor(d, v); } UpdateCoopHints(); }
+
+        // Einstellungen, die der Coop-Modus ignoriert, im Titel kennzeichnen
+        void UpdateCoopHints()
+        {
+            FormRow r;
+            if (_rows.TryGetValue("sv.noVehicles", out r))
+            {
+                string lab = Defs.Get("sv.noVehicles").Label + (_coop ? T("   ·   nur Conquest", "   ·   Conquest only") : "");
+                if (r.Label != lab) { r.Label = lab; r.PerformLayout(); r.Invalidate(); }
+            }
+        }
 
         int PendingLive()
         {

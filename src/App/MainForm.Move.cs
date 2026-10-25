@@ -1,4 +1,4 @@
-// Hauptfenster: Manager in den Spielordner kopieren (feste Firewall-Freigabe, Desktop-Verknüpfung) - BF2 Manager. C# 5.
+﻿// Hauptfenster: Manager in den Spielordner kopieren (feste Firewall-Freigabe, Desktop-Verknüpfung) - BF2 Manager. C# 5.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,7 +11,27 @@ namespace BF2Coop
 {
     public partial class MainForm
     {
-        string GameDirExe { get { return Path.Combine(GameDir, AppInfo.ExeName); } }
+        // Standard-Anordnung: Manager neben dem Spielordner (Battlefield2\BF2Manager.exe + Battlefield2\Battlefield 2\BF2.exe).
+        // Liegt das Spiel in einem Systemordner (z. B. C:\Program Files (x86)\EA GAMES), kommt der Manager in den Spielordner selbst.
+        string MoveDir
+        {
+            get
+            {
+                try
+                {
+                    string parent = Path.GetDirectoryName(GameDir.TrimEnd('\\', '/'));
+                    if (string.IsNullOrEmpty(parent) || parent.Length <= 3) return GameDir;
+                    string p = parent.TrimEnd('\\', '/') + "\\";
+                    foreach (string sys in new string[] { Environment.GetEnvironmentVariable("ProgramFiles"), Environment.GetEnvironmentVariable("ProgramFiles(x86)"), Environment.GetEnvironmentVariable("windir") })
+                        if (!string.IsNullOrEmpty(sys) && p.StartsWith(sys.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase)) return GameDir;
+                    return parent;
+                }
+                catch { return GameDir; }
+            }
+        }
+
+        bool MoveIsBeside { get { return !string.Equals(MoveDir.TrimEnd('\\', '/'), GameDir.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase); } }
+        string GameDirExe { get { return Path.Combine(MoveDir, AppInfo.ExeName); } }
 
         // Angebot nur, wenn das Spiel gefunden ist und der Manager woanders liegt (z. B. Downloads)
         bool CanMoveToGameDir
@@ -24,11 +44,12 @@ namespace BF2Coop
         {
             if (!CanMoveToGameDir || _cfg.B("MoveAsked", false)) return;
             _cfg.Set("MoveAsked", true); _cfg.Save();
-            int r = DarkDialog.Ask(this, T("Manager in den Spielordner legen?", "Put the manager into the game folder?"),
-                T("Der Manager läuft gerade aus\n", "The manager is currently running from\n") + AppPaths.ExeDir + "\n\n" +
-                T("Im Battlefield-2-Ordner ist er besser aufgehoben:\n• Die Firewall-Freigabe bleibt gültig – Server im LAN werden zuverlässig gefunden.\n• Kopierst du den Spielordner für eine LAN-Party, ist der Manager gleich dabei.\n• Eine Verknüpfung „BF2 Manager“ kommt auf den Desktop.\n\nEinstellungen und Profile bleiben, wie sie sind. Jederzeit auch unter Einstellungen › Ordner.",
-                  "It is better placed in the Battlefield 2 folder:\n• The firewall rule stays valid – servers on the LAN are found reliably.\n• When you copy the game folder for a LAN party, the manager comes along.\n• A “BF2 Manager” shortcut is put on the desktop.\n\nSettings and profiles stay as they are. Also available any time under Settings › Folders."),
-                1, false, T("Nicht jetzt", "Not now"), T("In den Spielordner kopieren", "Copy to game folder"));
+            bool beside = MoveIsBeside;
+            int r = DarkDialog.Ask(this, beside ? T("Manager neben den Spielordner legen?", "Put the manager next to the game folder?") : T("Manager in den Spielordner legen?", "Put the manager into the game folder?"),
+                T("Der Manager läuft gerade aus\n", "The manager is currently running from\n") + AppPaths.ExeDir + "\n\n" + T("Besser aufgehoben wäre er hier:\n", "A better place would be:\n") + MoveDir + "\n\n" +
+                T("• Die Firewall-Freigabe bleibt gültig – Server im LAN werden zuverlässig gefunden.\n• Der Spielordner wird automatisch gefunden" + (beside ? " (der Manager liegt daneben)" : "") + ".\n• Kopierst du den Ordner für eine LAN-Party, ist der Manager gleich dabei.\n• Eine Verknüpfung „BF2 Manager“ kommt auf den Desktop.\n\nEinstellungen und Profile bleiben, wie sie sind. Jederzeit auch unter Einstellungen › Ordner.",
+                  "• The firewall rule stays valid – servers on the LAN are found reliably.\n• The game folder is found automatically" + (beside ? " (the manager sits next to it)" : "") + ".\n• When you copy the folder for a LAN party, the manager comes along.\n• A “BF2 Manager” shortcut is put on the desktop.\n\nSettings and profiles stay as they are. Also available any time under Settings › Folders."),
+                1, false, T("Nicht jetzt", "Not now"), beside ? T("Neben den Spielordner kopieren", "Copy next to the game folder") : T("In den Spielordner kopieren", "Copy to game folder"));
             if (r == 1) MoveToGameDir();
         }
 

@@ -3,7 +3,7 @@
 # commands from the app (coop_cmd.txt). No network port, no password.
 # Python 2.3 compatible (BF2 server): no sorted(), no generator expressions,
 # no "with", no "x if y else z", no "except X as e".
-MODULE_VERSION = 4
+MODULE_VERSION = 5
 import time
 import sys
 import host
@@ -22,6 +22,10 @@ g_lastCmdId = 0L
 g_lastNextId = None
 g_usedNextId = ""
 g_adapt = 0
+# After a manual map request (@nextmap, @reload) the EndGame event must not recompute the values just set,
+# and a map that was only reloaded does not count as a finished round for the leaderboard.
+g_skipEndUntil = 0.0
+g_noRecordUntil = 0.0
 
 
 def toInt(s, dflt):
@@ -397,11 +401,15 @@ def onGameStatusChanged(status):
     try:
         log("GameStatus=" + str(status))
         if status == bf2.GameStatus.EndGame:
-            try:
-                recordRound()
-            except:
-                logErr()
-            applyForNext("EndGame")
+            if time.time() >= g_noRecordUntil:
+                try:
+                    recordRound()
+                except:
+                    logErr()
+            if time.time() < g_skipEndUntil:
+                log("EndGame: values were set by the manual map change, kept")
+            else:
+                applyForNext("EndGame")
         elif status == bf2.GameStatus.PreGame or status == bf2.GameStatus.Playing:
             applyCommander("round start")
     except:
@@ -449,7 +457,7 @@ def writeLive():
 
 def isAllowed(cmd):
     low = cmd.lower()
-    if cmd == "@nextmap" or cmd.startswith("@commander "):
+    if cmd == "@nextmap" or cmd == "@reload" or cmd.startswith("@commander "):
         return 1
     for p in ALLOWED_PREFIXES:
         if low.startswith(p.lower()):
@@ -469,7 +477,7 @@ def maxCmdId():
 
 
 def processCommands():
-    global g_lastCmdId
+    global g_lastCmdId, g_skipEndUntil, g_noRecordUntil
     top = g_lastCmdId
     for raw in readLines(g_cfgDir + "coop_cmd.txt"):
         parts = raw.strip().split(None, 1)
@@ -486,6 +494,17 @@ def processCommands():
             continue
         if cmd == "@nextmap":
             applyForNext("manual")
+            g_skipEndUntil = time.time() + 20.0
+            res = runCmd("admin.runNextLevel")
+        elif cmd == "@reload":
+            # reload the current map with the (one-time) bot values; players stay connected
+            cur = queryInt("mapList.currentMap")
+            if cur is None:
+                cur = 0
+            runCmd("admin.nextLevel " + str(cur))
+            applyForNext("reload")
+            g_skipEndUntil = time.time() + 20.0
+            g_noRecordUntil = time.time() + 20.0
             res = runCmd("admin.runNextLevel")
         elif cmd.startswith("@commander "):
             setCommander(toInt(cmd[11:].strip(), 1), "live")
@@ -493,7 +512,7 @@ def processCommands():
         else:
             res = runCmd(cmd)
         res = res.replace("\r", "").replace("\n", " | ")
-        log("command " + cmd + " -> " + res[:200])
+        log("command " + cmd + " -> " + res[:1500])
     g_lastCmdId = top
 
 

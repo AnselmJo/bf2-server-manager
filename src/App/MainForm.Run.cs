@@ -179,6 +179,7 @@ namespace BF2Coop
                 WriteNext(); LayoutLive();
                 Toast(T("Einmalige Botwerte wurden angewendet.", "One-time bot values were applied."), ToastKind.Info);
             }
+            string nu2; if (live.TryGetValue("nextUsed", out nu2)) BotsNowDone(nu2);
             if (_page != PgLive) return;
             RefreshLeaderboard();
             string map; live.TryGetValue("map", out map);
@@ -196,7 +197,7 @@ namespace BF2Coop
             if (_mod.Length > 0)
             {
                 string[] lines = _tail.ReadIfChanged(Path.Combine(ModSettingsDir, "coop_status.txt"), 250);
-                if (lines != null) SetLog(lines);
+                if (lines != null) { SetLog(lines); CheckResults(lines); }
             }
         }
 

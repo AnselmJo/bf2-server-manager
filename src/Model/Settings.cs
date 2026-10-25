@@ -86,7 +86,7 @@ rules|@commander|Commander erlauben|Allow commander|Bool|1||||1|Schaltet die Com
 rules|sv.spawnTime|Respawn-Zeit|Respawn time|Int|15|0|300|s|1|Wartezeit bis zum Wiedereinstieg nach dem Tod.|Waiting time before respawning after death.
 rules|sv.manDownTime|Wiederbelebungszeit|Revive time|Int|15|0|300|s|1|So lange kann ein Sanitäter einen Gefallenen wiederbeleben.|How long a medic can revive a downed soldier.
 rules|sv.hitIndicator|Treffer-Anzeige|Hit indicator|Bool|1||||1|Kurzes Signal am Fadenkreuz bei einem Treffer.|Short crosshair signal when you hit someone.
-rules|sv.noVehicles|Keine Fahrzeuge|No vehicles|Bool|0||||0|Reine Infanterie-Runden.|Infantry-only rounds.
+rules|sv.noVehicles|Keine Fahrzeuge|No vehicles|Bool|0||||0|Reine Infanterie-Runden. Wirkt nur im Conquest-Modus: Im Coop-Modus ignoriert das Spiel die Einstellung (getestet mit bf2 und bf2all64).|Infantry-only rounds. Works in Conquest mode only: in coop mode the game ignores the setting (tested with bf2 and bf2all64).
 rules|sv.autoBalanceTeam|Teams ausgleichen|Auto-balance teams|Bool|0||||1|Im Coop meist aus: Die Bots werden über die Bot-Verteilung verteilt, Menschen wählen ihr Team frei.|Usually off in coop: bots are distributed by the bot settings, humans pick their team freely.
 rules|sv.teamRatioPercent|Teamverhältnis|Team ratio|Int|100|0|100|%|1|Erlaubter Größenunterschied der Teams, wenn Teams ausgleichen aktiv ist.|Allowed team size difference when auto-balance is on.
 rules|sv.allowFreeCam|Freie Kamera|Free camera|Bool|0||||0|Freie Kamera beim Warten auf den Respawn.|Free camera while waiting to respawn.
