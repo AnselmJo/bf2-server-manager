@@ -251,6 +251,5 @@ namespace BF2Coop
             return File.Exists(p) ? p : null;
         }
 
-        public const string DownloadUrl = "https://www.microsoft.com/en-us/download/details.aspx?id=8109";
     }
 }

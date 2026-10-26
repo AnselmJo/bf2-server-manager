@@ -1,13 +1,13 @@
-# BF2 Manager
+﻿# BF2 Manager
 
 [![CI](https://github.com/AnselmJo/bf2-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/AnselmJo/bf2-manager/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/AnselmJo/bf2-manager)](https://github.com/AnselmJo/bf2-manager/releases/latest)
 
 **The Battlefield 2 launcher for LAN parties: find the server and join with one click – or host a coop server with bots.**
 
-### [⬇ Download BF2Manager.exe (latest version)](https://github.com/AnselmJo/bf2-manager/releases/latest/download/BF2Manager.exe)
+### [⬇ Latest version on the Releases page](https://github.com/AnselmJo/bf2-manager/releases/latest)
 
-Click, save, start – that's it. Windows SmartScreen may warn because the file is not signed: *More info › Run anyway*. Checksum: [SHA256SUMS.txt](https://github.com/AnselmJo/bf2-manager/releases/latest/download/SHA256SUMS.txt) · [all releases](https://github.com/AnselmJo/bf2-manager/releases) · the manager updates itself afterwards.
+Open the page and download `BF2Manager.exe` under *Assets*. Windows SmartScreen may warn because the file is not signed: *More info › Run anyway*. `SHA256SUMS.txt` next to it lets you verify the file. The manager updates itself afterwards.
 
 One single `.exe`, no installation, German and English. Two modes, switched at the top left:
 
@@ -40,7 +40,7 @@ One single `.exe`, no installation, German and English. Two modes, switched at t
 
 ## Quick start
 
-1. Download **[`BF2Manager.exe`](https://github.com/AnselmJo/bf2-manager/releases/latest/download/BF2Manager.exe)** (always the latest version).
+1. Download `BF2Manager.exe` from the [latest release](https://github.com/AnselmJo/bf2-manager/releases/latest) (under *Assets*).
 2. Put it into your Battlefield 2 folder (next to `BF2.exe`) – or anywhere, it finds the game.
 3. Start it (SmartScreen: *More info › Run anyway*), enter your player name, click **Fix** if the bar is yellow.
 4. **Play:** click **Join** on a server. **Host:** switch to *Host* at the top left and follow the one-time setup.
@@ -64,7 +64,7 @@ Windows 10/11 (.NET Framework 4.5+ is part of Windows) and Battlefield 2 with pa
 
 ## Deutsch
 
-**[⬇ BF2Manager.exe herunterladen (neueste Version)](https://github.com/AnselmJo/bf2-manager/releases/latest/download/BF2Manager.exe)**
+**[⬇ Neueste Version auf der Releases-Seite](https://github.com/AnselmJo/bf2-manager/releases/latest)** – dort unter *Assets* `BF2Manager.exe` herunterladen.
 
 Der BF2 Manager ist komplett zweisprachig (*Einstellungen › Sprache*). Exe herunterladen, starten (SmartScreen: *Weitere Informationen › Trotzdem ausführen*), Spielordner und Namen bestätigen – Server erscheinen automatisch, **Beitreten** klicken. Wer hostet, schaltet oben links auf **Hosten**. Updates holt sich der Manager danach selbst.
 

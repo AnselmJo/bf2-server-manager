@@ -25,7 +25,7 @@ A welcome window asks for two things: the **game folder** (found automatically; 
 
 **Settings** – This PC (check and fixes, click to expand; *Server search on LAN* tests whether the firewall lets the manager's announcements through and offers *Allow in firewall*), Game start (windowed, skip intro, log in automatically), Graphics (incl. optional ReShade), Audio, Mods (versions), Updates, Diagnostics, Language, Folders (incl. *Change game folder*).
 
-**ReShade (optional)** – image filters for a sharper, more vivid look. The manager does not ship ReShade; *Set up* explains how to install it from reshade.me (Direct3D 9, select BF2.exe). Afterwards a switch turns it on and off. If BF2 freezes, switch it off first.
+**ReShade (optional)** – image filters for a sharper, more vivid look. The manager does not ship ReShade; *Set up* explains how to install it from the official ReShade website (Direct3D 9, select BF2.exe). Afterwards a switch turns it on and off. If BF2 freezes, switch it off first.
 
 ## Host
 

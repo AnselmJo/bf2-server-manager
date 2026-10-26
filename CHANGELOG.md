@@ -23,7 +23,7 @@ Bug fixes and an easier download.
 - **Server search check** in *Settings › This PC*: the manager tests whether its own LAN announcement comes back. If not, it says so and offers **Allow in firewall** (one Windows prompt). Player PCs without a server send a small test packet for this; older managers ignore it.
 - **Copy the manager into the game folder:** if it runs from somewhere else (e.g. Downloads), the manager offers once to copy itself next to `BF2.exe` – with a firewall rule for the new place and a *BF2 Manager* desktop shortcut – restarts from there and offers to delete the old copy. Also under *Settings › Folders*.
 - **Refresh** button on *Servers on the network*. The list still updates by itself every few seconds; the note *searching …* shows that it is looking.
-- **Direct download link** for the latest `BF2Manager.exe` at the top of the README and in every release description.
+- **Link to the latest release** at the top of the README (the Releases page; the file itself is listed under *Assets*).
 
 ## [1.2.2]
 
@@ -35,7 +35,7 @@ Easier start for new players, profiles in the manager, bot radio switch.
 - **"Game stuck? Close it"** while BF2 runs, with tips (repair profile, ReShade off, windowed mode, check the server).
 - **Game folder:** *Choose folder* directly on Play when BF2 is not found (also accepts the parent folder), *Settings › Folders › Change game folder* for later changes.
 - **Bot radio messages on/off** (*Bots › Radio*): silences "Medic!", "Roger that" etc. by switching the mod's `ai\AIRadioMessages.ai` (backup created, applies at the next server start).
-- **ReShade (optional) with setup guide:** what it does, how to install it from reshade.me for BF2 (Direct3D 9), freeze warning. The on/off switch appears once ReShade is installed.
+- **ReShade (optional) with setup guide:** what it does, how to install it from the official ReShade website for BF2 (Direct3D 9), freeze warning. The on/off switch appears once ReShade is installed.
 
 ### Changed
 - The green "This PC is ready" bar is gone; the player card shows a small *✓ This PC is ready*. The yellow bar with **Fix** only appears when something needs attention.

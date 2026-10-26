@@ -1,4 +1,4 @@
-name: Release
+﻿name: Release
 
 # Push a tag like v1.2.1 to build and publish a release.
 # The in-app updater downloads BF2Manager.exe and verifies it against SHA256SUMS.txt.
@@ -35,9 +35,8 @@ jobs:
           $text = Get-Content CHANGELOG.md -Raw
           $m = [regex]::Match($text, "(?ms)^## \[?$([regex]::Escape($ver))\]?[^\n]*\n(.*?)(?=^## |\z)")
           $notes = if ($m.Success) { $m.Groups[1].Value.Trim() } else { "See CHANGELOG.md" }
-          # Download-Link ganz oben, damit niemand die Assets suchen muss
-          $repo = "${{ github.repository }}"
-          $head = "### [⬇ Download BF2Manager.exe](https://github.com/$repo/releases/download/${{ github.ref_name }}/BF2Manager.exe)`n`nStart it (SmartScreen: *More info › Run anyway*). Already installed? The manager offers the update itself.`n`n---`n`n"
+          # Hinweis ganz oben: Die Datei steht unter „Assets“ dieses Releases
+          $head = "Download **BF2Manager.exe** under *Assets* below. Start it (SmartScreen: *More info › Run anyway*). Already installed? The manager offers the update itself.`n`n---`n`n"
           ($head + $notes) | Out-File -Encoding utf8 out/notes.md
 
       - name: Publish

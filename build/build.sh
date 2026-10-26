@@ -1,4 +1,4 @@
-#!/bin/sh
+﻿#!/bin/sh
 # Linux build (Mono mcs + mingw windres) of the Windows exe. CI builds on Windows with Build.cmd.
 # Compiles against the official .NET Framework 4.5 reference assemblies (NOT Mono's own libraries,
 # which contain extra overloads that do not exist on Windows).
@@ -6,8 +6,8 @@ set -e
 cd "$(dirname "$0")"
 REF=refs/v4.5
 if [ ! -f "$REF/mscorlib.dll" ]; then
-  mkdir -p refs && curl -sL -o refs/ra.zip https://codeload.github.com/mono/reference-assemblies/zip/refs/heads/main
-  unzip -q -o -j refs/ra.zip 'reference-assemblies-main/v4.5/*.dll' -d "$REF" && rm refs/ra.zip
+  echo "Missing $REF: put the .NET Framework 4.5 reference assemblies (mscorlib.dll, System*.dll) into build/refs/v4.5 first (see docs/BUILDING.md)." >&2
+  exit 1
 fi
 printf '#!/bin/sh\nfor a in "$@"; do l="$a"; done\ncat "$l"\n' > /tmp/pp.sh; chmod +x /tmp/pp.sh
 x86_64-w64-mingw32-windres --preprocessor=/tmp/pp.sh -O res -i app.rc -o app.res

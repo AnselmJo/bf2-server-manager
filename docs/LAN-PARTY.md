@@ -8,7 +8,7 @@ Goal: **one folder** that you copy to every PC. Nobody installs anything, nobody
 
 ```
 Battlefield2\                    ← LAN folder, e.g. C:\Games\Battlefield2
-  BF2Manager.exe                ← the manager (download: github.com/AnselmJo/bf2-manager/releases/latest/download/BF2Manager.exe)
+  BF2Manager.exe                ← the manager (from the project
                                    – finds the game folder next to it by itself
   Battlefield 2\                ← your game folder
     BF2.exe
@@ -28,13 +28,13 @@ Tips:
 
 Fresh Windows installations often miss `d3dx9_xx.dll`. Microsoft allows passing on the official package:
 
-1. Download *DirectX End-User Runtimes (June 2010)*: https://www.microsoft.com/en-us/download/details.aspx?id=8109
+1. Get the *DirectX End-User Runtimes (June 2010)* from Microsoft
 2. Extract it into the folder: `directx_Jun2010_redist.exe /Q /T:"C:\Games\Battlefield 2\_LAN\DirectX"`
 3. The health bar (**Fix**) now installs DirectX on PCs that need it (silent, one Windows prompt).
 
 ### ReShade (optional)
 
-Install ReShade once into your game folder (reshade.me, select `BF2.exe`, Direct3D 9) – *Settings › Graphics › ReShade › Set up* shows the steps. To hand it on, put the working setup (the `d3d9.dll`, `ReShade.ini`, preset and shader folders) into `_LAN\ReShade`. Players can switch it on and off under **Settings › Graphics › ReShade**. It only affects their own screen. If BF2 freezes, switch ReShade off first.
+Install ReShade once into your game folder (from the official ReShade website; select `BF2.exe`, Direct3D 9) – *Settings › Graphics › ReShade › Set up* shows the steps. To hand it on, put the working setup (the `d3d9.dll`, `ReShade.ini`, preset and shader folders) into `_LAN\ReShade`. Players can switch it on and off under **Settings › Graphics › ReShade**. It only affects their own screen. If BF2 freezes, switch ReShade off first.
 
 ## 2. Copy the folder to every PC
 

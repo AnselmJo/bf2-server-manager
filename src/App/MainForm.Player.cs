@@ -1,4 +1,4 @@
-// Hauptfenster: Seite Spieler (Profil, Spielen, Server im LAN, Grafik, Audio) - BF2 Manager. C# 5.
+﻿// Hauptfenster: Seite Spieler (Profil, Spielen, Server im LAN, Grafik, Audio) - BF2 Manager. C# 5.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -284,16 +284,14 @@ namespace BF2Coop
 
         void ReShadeHelp()
         {
-            int r = DarkDialog.Ask(this, T("ReShade einrichten", "Set up ReShade"),
+            DarkDialog.Ask(this, T("ReShade einrichten", "Set up ReShade"),
                 T("ReShade legt Filter über das fertige Bild: schärfer, kräftigere Farben, bessere Kantenglättung. Texturen und Modelle bleiben gleich – es ist ein aufpolierter Look, keine neue Grafik. Es kostet etwas Leistung und ist zum Spielen nicht nötig.\n\n" +
-                  "So geht's:\n1. ReShade auf reshade.me herunterladen und starten.\n2. BF2.exe im Spielordner auswählen.\n3. Als Schnittstelle „Direct3D 9“ wählen.\n4. Effekte wählen, z. B. SMAA, LumaSharpen, Vibrance.\n5. Manager neu öffnen – hier erscheint dann der Schalter an/aus.\nIm Spiel öffnet die Pos1-Taste das ReShade-Menü.\n\n" +
+                  "So geht's:\n1. ReShade von der offiziellen ReShade-Website herunterladen und starten.\n2. BF2.exe im Spielordner auswählen.\n3. Als Schnittstelle „Direct3D 9“ wählen.\n4. Effekte wählen, z. B. SMAA, LumaSharpen, Vibrance.\n5. Manager neu öffnen – hier erscheint dann der Schalter an/aus.\nIm Spiel öffnet die Pos1-Taste das ReShade-Menü.\n\n" +
                   "⚠ Friert BF2 ein oder stürzt ab, ReShade hier zuerst ausschalten. Manche Online-Server mit Anti-Cheat beanstanden ReShade; im LAN ist das kein Thema.",
                   "ReShade puts filters over the finished image: sharper, more vivid colours, better anti-aliasing. Textures and models stay the same – it is a polished look, not new graphics. It costs some performance and is not needed to play.\n\n" +
-                  "How to:\n1. Download ReShade from reshade.me and run it.\n2. Select BF2.exe in the game folder.\n3. Choose “Direct3D 9” as the rendering API.\n4. Pick effects, e.g. SMAA, LumaSharpen, Vibrance.\n5. Reopen the manager – the on/off switch then appears here.\nIn game the Home key opens the ReShade menu.\n\n" +
+                  "How to:\n1. Download ReShade from the official ReShade website and run it.\n2. Select BF2.exe in the game folder.\n3. Choose “Direct3D 9” as the rendering API.\n4. Pick effects, e.g. SMAA, LumaSharpen, Vibrance.\n5. Reopen the manager – the on/off switch then appears here.\nIn game the Home key opens the ReShade menu.\n\n" +
                   "⚠ If BF2 freezes or crashes, switch ReShade off here first. Some online servers with anti-cheat object to ReShade; on LAN this does not matter."),
-                1, false, T("Schließen", "Close"), T("reshade.me öffnen", "Open reshade.me"));
-            try { if (r == 1) Process.Start("https://reshade.me"); }
-            catch (Exception ex) { Toast(ex.Message, ToastKind.Error); }
+                0, false, T("Schließen", "Close"));
         }
 
         void ClearShaderCache()

@@ -1,4 +1,4 @@
-# Building
+﻿# Building
 
 The manager is a single Windows Forms executable written in **C# 5** for **.NET Framework 4.5+**. No NuGet packages, no Visual Studio needed.
 
@@ -18,7 +18,7 @@ build/build.sh        # out/BF2Manager.exe
 build/build.sh test   # also out/Tests.exe; run with: mono out/Tests.exe
 ```
 
-Requires `mono-mcs` and `binutils-mingw-w64` (for `windres`). The script compiles against the official .NET Framework 4.5 **reference assemblies** (downloaded once from github.com/mono/reference-assemblies). Never compile against Mono's own class libraries: they contain overloads that do not exist on Windows (e.g. `string.Split(char, StringSplitOptions)`), which compile fine and then crash on Windows.
+Requires `mono-mcs` and `binutils-mingw-w64` (for `windres`). The script compiles against the official .NET Framework 4.5 **reference assemblies** (put them into `build/refs/v4.5` before the first build; the script does not download anything). Never compile against Mono's own class libraries: they contain overloads that do not exist on Windows (e.g. `string.Split(char, StringSplitOptions)`), which compile fine and then crash on Windows.
 
 ## Embedded resources
 

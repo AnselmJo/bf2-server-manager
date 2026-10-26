@@ -102,7 +102,7 @@ namespace BF2Coop
                     dx.Status = CheckStatus.Error; dx.Detail = T("Fehlt: ", "Missing: ") + string.Join(", ", miss.ToArray());
                     string setup = DirectX.Setup(gameDir);
                     if (setup != null) { dx.Tasks.Add(Tasks.DirectX(setup)); dx.FixLabel = T("DirectX installieren", "Install DirectX"); }
-                    else { dx.Url = DirectX.DownloadUrl; dx.FixLabel = T("Download öffnen", "Open download"); dx.Detail += T(" · Tipp: Paket nach _LAN\\DirectX entpacken", " · Tip: extract the package to _LAN\\DirectX"); }
+                    else { dx.Detail += T(" · Tipp: die DirectX-Laufzeit (Juni 2010) von Microsoft nach _LAN\\DirectX entpacken, dann behebt der Manager das", " · Tip: extract the DirectX runtime (June 2010) from Microsoft to _LAN\\DirectX, then the manager can fix it"); }
                 }
             }
             else { dx.Status = CheckStatus.Info; dx.Detail = T("Nur Server installiert (kein BF2.exe).", "Server only (no BF2.exe)."); }
